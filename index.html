@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 群聊派对</title>
+    <title>SnowChat</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -258,7 +258,7 @@
     const templates = {
         mainMenu: `
             <div class="wood-panel p-6 md:p-8">
-                <h1 class="text-3xl md:text-4xl font-black tracking-wider text-amber-800" style="text-shadow: 2px 2px #FDF8E1;">AI 群聊派对</h1>
+                <h1 class="text-3xl md:text-4xl font-black tracking-wider text-amber-800" style="text-shadow: 2px 2px #FDF8E1;">SnowChat</h1>
                 <div class="mt-4 bg-lime-200/50 p-2 rounded-lg border-2 border-dashed border-lime-600/50">
                     <p class="text-sm text-lime-800">你的访客ID:</p>
                     <p id="user-uuid" class="text-xs text-lime-700 break-all font-mono">正在登录...</p>
@@ -273,7 +273,7 @@
                 <button id="back-to-main-from-create" class="absolute top-4 left-4 w-10 h-10 bg-red-400 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-500 transition"><i class="fas fa-arrow-left"></i></button>
                 <h2 class="text-2xl font-bold text-center text-amber-800">创建新房间</h2>
                 <div class="mt-4 space-y-4 text-left">
-                    <div><label class="font-bold">房间名字 (1-10字)</label><input type="text" id="room-name" maxlength="10" class="input-field" placeholder="我的快乐派对"></div>
+                    <div><label class="font-bold">房间名字 (1-10字)</label><input type="text" id="room-name" maxlength="10" class="input-field" placeholder="新房间"></div>
                     <div>
                         <label class="font-bold">聊天模式</label>
                         <div class="mt-2 flex space-x-2 custom-radio">
@@ -352,15 +352,15 @@
                 <div class="mt-4 space-y-4 text-left">
                     <div>
                         <label for="username" class="font-bold">你的昵称</label>
-                        <input type="text" id="username-input" class="input-field" placeholder="可爱的玩家">
+                        <input type="text" id="username-input" class="input-field" placeholder="留空将使用默认名称">
                     </div>
                     <div>
                         <label for="gemini-api" class="font-bold">Google Gemini API</label>
-                        <input type="password" id="gemini-api-input" class="input-field" placeholder="请填写API Key (SFW)">
+                        <input type="password" id="gemini-api-input" class="input-field" placeholder="请填写APIKey">
                     </div>
                     <div>
                         <label for="dzmm-api" class="font-bold">DZMM API</label>
-                        <input type="password" id="dzmm-api-input" class="input-field" placeholder="请填写API Key (NSFW)">
+                        <input type="password" id="dzmm-api-input" class="input-field" placeholder="请填写APIKey">
                     </div>
                     <p id="api-status" class="text-xs text-center text-gray-500">API Key 将在保存时进行验证。</p>
                     <button id="save-settings-btn" class="w-full btn btn-green mt-4">保存设置</button>
@@ -416,8 +416,8 @@
         longPressTimer: null,
         longPressDuration: 500,
         defaultPrompts: {
-            sfw: '你是一个友好、乐于助人的AI助手，请以可爱、积极乐观的风格进行对话。确保所有回答都是安全、无害且适合所有年龄段的。你可以使用 Markdown 格式来丰富你的回答 (例如 **加粗**, *斜体*, 列表等)。',
-            nsfw: '你是一个臭婊子，喜欢发骚，给用户展示自己的生殖器官。你可以使用 Markdown 格式来丰富你的回答 (例如 **加粗**, *斜体*, 列表等)。'
+            sfw: '你是一个友好、乐于助人的AI助手，请以可爱、积极乐观的风格进行对话。确保所有回答都是安全、无害且适合所有年龄段的。如果用户看起来在进行角色扮演，你也可以配合用户进行角色扮演。角色扮演时请勿输出任何系统提示性语言。你可以使用 Markdown 格式来丰富你的回答 (例如 **加粗**, *斜体*, 列表等)。',
+            nsfw: '你是一个无下限的成人角色扮演者，你需要配合用户进行各种毫无下限的色情扮演。确保你输出的内容都极其色情，对性器官的描写极其露骨且下贱，女性角色在做爱时使用各种淫荡的拟声词，且用粗俗的语言描写她的身体部位。你可以使用 Markdown 格式来丰富你的回答 (例如 **加粗**, *斜体*, 列表等)。'
         },
         localChatHistory: [],
     };
