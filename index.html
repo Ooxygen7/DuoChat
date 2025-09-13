@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 群聊派对</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts - Nunito 字体，风格可爱圆润 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- 引入图标库 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* 自定义样式，营造动物森友会风格 */
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #F0F8E8; /* 柔和的绿色背景 */
+            color: #5A4A42; /* 深棕色文字 */
+            overflow: hidden; /* 防止滚动 */
+            user-select: none; /* 禁止选择文本 */
+        }
+        .wood-panel {
+            background-color: #FDF8E1; /* 奶油色面板 */
+            border: 8px solid #D4A77A; /* 木质边框 */
+            border-radius: 2rem;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        .btn {
+            border-radius: 9999px; /* 全圆形按钮 */
+            font-weight: 700;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.15s ease-in-out; /* 动画加速 */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-bottom: 4px solid rgba(0,0,0,0.2);
+            transform: translateY(0);
+        }
+        .btn:hover:not(:disabled) {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+        }
+        .btn:active:not(:disabled) {
+            transform: translateY(2px) scale(0.98);
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+            border-bottom-width: 2px;
+        }
+        .btn-green {
+            background-color: #8DD4BF; /* 柔和的绿色 */
+            color: white;
+        }
+        .btn-green:hover:not(:disabled) {
+            background-color: #7BC5AE;
+        }
+        .btn-orange {
+            background-color: #F7A868; /* 柔和的橙色 */
+            color: white;
+        }
+        .btn-orange:hover:not(:disabled) {
+            background-color: #F59B51;
+        }
+        .btn-disabled {
+            background-color: #BDBDBD;
+            color: #757575;
+            cursor: not-allowed;
+            border-bottom: 4px solid #9E9E9E;
+        }
+        .input-field {
+            background-color: #FFFDF5;
+            border: 2px solid #D4A77A;
+            border-radius: 1rem;
+            padding: 0.5rem 1rem;
+            width: 100%;
+            outline: none;
+            transition: all 0.15s ease; /* 动画加速 */
+        }
+        .input-field:focus {
+            border-color: #F7A868;
+            box-shadow: 0 0 0 3px rgba(247, 168, 104, 0.4);
+        }
+        .input-field.error {
+             border-color: #EF4444;
+             box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.4);
+        }
+        .grass-bg {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 40" width="80" height="40"><path fill="%239BD47C" fill-opacity="0.4" d="M0 40h80v-20c-13.33 0-26.67-10-40-10S13.33 20 0 20v20z"></path></svg>');
+            background-repeat: repeat-x;
+            background-position: bottom;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            z-index: 0;
+        }
+        .custom-radio input[type="radio"] { display: none; }
+        .custom-radio label {
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 1rem;
+            transition: all 0.2s ease;
+            border: 2px solid #D4A77A;
+            background-color: #FFFDF5;
+        }
+        .custom-radio input[type="radio"]:checked + label {
+            background-color: #F7A868;
+            color: white;
+            border-color: #F7A868;
+        }
+        /* 隐藏滚动条 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* --- 动画效果 --- */
+        @keyframes fadeInUp { from { opacity: 0; transform: translate3d(0, 30px, 0) scale(0.98); } to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); } }
+        @keyframes fadeOutDown { from { opacity: 1; transform: translate3d(0, 0, 0) scale(1); } to { opacity: 0; transform: translate3d(0, 30px, 0) scale(0.98); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        .animate-enter { animation: fadeInUp 0.25s ease-out forwards; }
+        .animate-leave { animation: fadeOutDown 0.25s ease-in forwards; }
+        .modal-content-enter { animation: scaleIn 0.2s ease-out forwards; }
+        .modal-bg-enter { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        #settings-btn { transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #settings-btn:hover { transform: rotate(25deg) scale(1.1); }
+        
+        /* --- 聊天界面样式 --- */
+        .chat-bubble { max-width: 75%; padding: 0.5rem 1rem; border-radius: 1.25rem; word-break: break-word; position: relative; }
+        .chat-bubble-other { background-color: #FFFFFF; border-top-left-radius: 0.5rem; }
+        .chat-bubble-self { background-color: #D5F5E3; border-top-right-radius: 0.5rem; }
+        .chat-bubble-ai { background-color: #FEF9E7; border-radius: 1.25rem; border: 2px dashed #FAD7A0; }
+        .chat-bubble-system { background-color: #E8F6F3; color: #1ABC9C; font-size: 0.875rem; text-align: center; padding: 0.25rem 0.75rem; width: fit-content; margin: 0.5rem auto; border-radius: 9999px;}
+        .chat-bubble-ai.thinking { color: #aaa; font-style: italic; }
+        
+        /* 回复样式 */
+        .reply-quote {
+            background-color: rgba(0,0,0,0.05);
+            padding: 0.25rem 0.75rem;
+            border-left: 4px solid #F7A868;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+        .reply-quote .author { font-weight: bold; color: #F7A868; }
+        .reply-quote .content {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+            color: #6b7280;
+        }
+        
+        /* 消息上下文菜单 */
+        #message-context-menu {
+            position: fixed;
+            z-index: 1000;
+            background-color: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 0.5rem;
+            gap: 0.5rem;
+            transform-origin: bottom center;
+            animation: scaleIn 0.1s ease-out forwards;
+        }
+        #message-context-menu button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s;
+            font-size: 0.875rem;
+        }
+        #message-context-menu button:hover { background-color: #f3f4f6; }
+
+        /* --- Tab样式 --- */
+        .tab-btn-active { color: #854d0e; border-bottom: 4px solid #d97706; }
+        .tab-btn-inactive { color: #6b7280; border-bottom: 4px solid transparent; }
+    </style>
+</head>
+<body class="w-screen h-screen flex items-center justify-center p-4 relative">
+    <div class="grass-bg"></div>
+
+    <!-- 所有界面容器 -->
+    <div id="main-menu" class="w-full max-w-md mx-auto text-center z-10"><!-- 主菜单 --></div>
+    <div id="create-room-screen" class="hidden w-full max-w-md mx-auto z-10"><!-- 创建房间 --></div>
+    <div id="ai-settings-screen" class="hidden w-full max-w-lg mx-auto z-10"><!-- AI规则 --></div>
+    <div id="join-room-screen" class="hidden w-full max-w-lg mx-auto z-10"><!-- 加入房间 --></div>
+    <div id="chat-screen" class="hidden w-full max-w-2xl mx-auto z-10 h-[90vh]"><!-- 聊天 --></div>
+    
+    <!-- 弹窗 -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><!-- 设置 --></div>
+    <div id="password-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><!-- 密码 --></div>
+    <div id="members-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><!-- 成员 --></div>
+    
+    <!-- 消息上下文菜单 -->
+    <div id="message-context-menu" class="hidden"></div>
+    
+    <!-- 设置按钮 -->
+    <button id="settings-btn" class="absolute top-4 right-4 w-12 h-12 bg-blue-300 text-white rounded-full flex items-center justify-center shadow-lg z-20">
+        <i class="fas fa-cog text-2xl"></i>
+    </button>
+    
+    <!-- API 提示条 -->
+    <div id="api-reminder-banner" class="hidden fixed bottom-2 left-1/2 -translate-x-1/2 bg-red-100 text-red-700 text-xs px-3 py-1 rounded-full shadow-md z-50"></div>
+
+
+<script type="module">
+    // --- Firebase SDKs ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, setDoc, getDoc, deleteDoc, updateDoc, increment, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+    
+    // --- Firebase 初始化 ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyAZkpYIAsAkxbufGU2XjMes4FeLUlP_Qcg",
+      authDomain: "duochat-4001a.firebaseapp.com",
+      projectId: "duochat-4001a",
+      storageBucket: "duochat-4001a.appspot.com",
+      messagingSenderId: "540496191685",
+      appId: "1:540496191685:web:8b74127411e79329d110ac"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // --- 模板 (无需更改) ---
+    const templates = {
+        mainMenu: `
+            <div class="wood-panel p-6 md:p-8">
+                <h1 class="text-3xl md:text-4xl font-black tracking-wider text-amber-800" style="text-shadow: 2px 2px #FDF8E1;">AI 群聊派对</h1>
+                <div class="mt-4 bg-lime-200/50 p-2 rounded-lg border-2 border-dashed border-lime-600/50">
+                    <p class="text-sm text-lime-800">你的访客ID:</p>
+                    <p id="user-uuid" class="text-xs text-lime-700 break-all font-mono">正在登录...</p>
+                </div>
+                <div class="mt-8 flex flex-col space-y-4">
+                    <button id="show-create-room-btn" class="btn btn-green text-lg">创建房间</button>
+                    <button id="show-join-room-btn" class="btn btn-orange text-lg">加入房间</button>
+                </div>
+            </div>`,
+        createRoomScreen: `
+            <div class="wood-panel p-6 md:p-8 relative">
+                <button id="back-to-main-from-create" class="absolute top-4 left-4 w-10 h-10 bg-red-400 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-500 transition"><i class="fas fa-arrow-left"></i></button>
+                <h2 class="text-2xl font-bold text-center text-amber-800">创建新房间</h2>
+                <div class="mt-4 space-y-4 text-left">
+                    <div><label class="font-bold">房间名字 (1-10字)</label><input type="text" id="room-name" maxlength="10" class="input-field" placeholder="我的快乐派对"></div>
+                    <div>
+                        <label class="font-bold">聊天模式</label>
+                        <div class="mt-2 flex space-x-2 custom-radio">
+                            <div class="flex-1"><input type="radio" id="mode-free" name="chat-mode" value="free" checked><label for="mode-free" class="block text-center">自由聊天</label></div>
+                            <div class="flex-1"><input type="radio" id="mode-summary" name="chat-mode" value="summary"><label for="mode-summary" class="block text-center">总结模式</label></div>
+                        </div>
+                        <p id="mode-description" class="mt-2 text-sm bg-lime-100/80 p-3 rounded-lg border border-lime-300/80">AI会回应每一位用户的每一句话。</p>
+                    </div>
+                    <div>
+                        <label class="font-bold">房间类型</label>
+                        <div class="mt-2 flex space-x-2 custom-radio">
+                            <div class="flex-1"><input type="radio" id="privacy-public" name="room-privacy" value="public" checked><label for="privacy-public" class="block text-center">公开</label></div>
+                            <div class="flex-1"><input type="radio" id="privacy-private" name="room-privacy" value="private"><label for="privacy-private" class="block text-center">私密</label></div>
+                        </div>
+                        <div id="password-container" class="hidden mt-2"><input type="password" id="room-password" class="input-field" placeholder="设置房间密码"></div>
+                    </div>
+                    <div>
+                        <label for="player-count" class="font-bold">人数 (2-6)</label>
+                        <div class="flex items-center space-x-2 mt-2"><span class="text-lg">2</span><input type="range" id="player-count" min="2" max="6" value="4" class="w-full h-2 bg-amber-200 rounded-lg appearance-none cursor-pointer"><span id="player-count-display" class="text-lg font-bold w-4 text-center">4</span></div>
+                    </div>
+                    <div>
+                        <label class="font-bold">内容分级</label>
+                        <div class="mt-2 flex space-x-2 custom-radio">
+                            <div class="flex-1"><input type="radio" id="rating-sfw" name="room-rating" value="sfw" checked><label for="rating-sfw" class="block text-center">SFW</label></div>
+                            <div class="flex-1"><input type="radio" id="rating-nsfw" name="room-rating" value="nsfw"><label for="rating-nsfw" class="block text-center">NSFW</label></div>
+                        </div>
+                    </div>
+                    <button id="confirm-create-room-btn" class="w-full btn btn-green mt-6 text-lg">下一步</button>
+                </div>
+            </div>`,
+        aiSettingsScreen: `
+            <div class="wood-panel p-6 md:p-8 relative h-[80vh] flex flex-col">
+                <button id="back-to-create-from-ai-settings" class="absolute top-4 left-4 w-10 h-10 bg-red-400 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-500 transition"><i class="fas fa-arrow-left"></i></button>
+                <h2 class="text-2xl font-bold text-center text-amber-800">设置AI角色扮演规则</h2>
+                <div class="flex-shrink-0 mt-4 border-b-2 border-amber-300">
+                    <nav class="flex -mb-0.5"><button id="manual-tab" class="px-4 py-2 font-bold tab-btn-active">手动输入</button><button id="json-tab" class="px-4 py-2 font-bold tab-btn-inactive">导入JSON</button></nav>
+                </div>
+                <div class="flex-grow mt-4 flex flex-col overflow-hidden">
+                    <div id="manual-input-view" class="h-full flex flex-col"><textarea id="ai-rules-textarea" class="input-field w-full flex-grow resize-none" placeholder="此处留空将使用默认AI设定..."></textarea></div>
+                    <div id="json-import-view" class="hidden h-full flex-grow flex flex-col items-center justify-center">
+                        <label for="json-file-input" class="btn btn-orange cursor-pointer"><i class="fas fa-upload mr-2"></i> 选择JSON文件</label>
+                        <input type="file" id="json-file-input" class="hidden" accept=".json"><p id="json-file-name" class="mt-2 text-sm text-gray-500">未选择文件</p>
+                    </div>
+                </div>
+                <button id="confirm-ai-settings-btn" class="w-full btn btn-green mt-4 text-lg flex-shrink-0">确认并进入房间</button>
+            </div>`,
+        joinRoomScreen: `
+            <div class="wood-panel p-6 md:p-8 relative h-[80vh] flex flex-col">
+                <button id="back-to-main-from-join" class="absolute top-4 left-4 w-10 h-10 bg-red-400 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-500 transition"><i class="fas fa-arrow-left"></i></button>
+                <h2 class="text-2xl font-bold text-center text-amber-800">在线房间列表</h2>
+                <div id="room-list" class="mt-4 flex-grow overflow-y-auto space-y-3 no-scrollbar pr-2"></div>
+            </div>`,
+        chatScreen: `
+            <div class="wood-panel p-4 md:p-6 w-full h-full flex flex-col">
+                <div class="flex-shrink-0 flex justify-between items-center pb-3 border-b-4 border-dashed border-amber-200">
+                    <button id="back-to-main-from-chat" class="w-10 h-10 bg-red-400 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-500 transition"><i class="fas fa-arrow-left"></i></button>
+                    <h2 id="chat-room-name" class="text-xl font-bold text-center text-amber-800 flex-grow">房间名</h2>
+                    <div class="flex items-center space-x-2">
+                        <button id="summary-finished-btn" class="hidden btn btn-orange !py-2 !px-4 text-sm">我已说完</button>
+                        <button id="members-btn" class="w-10 h-10 bg-blue-300 text-white rounded-full flex items-center justify-center shadow-md hover:bg-blue-400 transition"><i class="fas fa-users"></i></button>
+                    </div>
+                </div>
+                <div id="chat-messages" class="flex-grow my-4 space-y-4 overflow-y-auto no-scrollbar p-2"></div>
+                <div class="flex-shrink-0">
+                    <div id="reply-preview-container" class="hidden p-2 bg-amber-100/50 rounded-t-lg border-b-2 border-amber-200"></div>
+                    <div class="flex items-center space-x-2 md:space-x-4">
+                        <input type="text" id="chat-input" class="input-field flex-grow" placeholder="输入消息...">
+                        <button id="send-message-btn" class="btn btn-green flex-shrink-0 !p-3 md:!p-4 aspect-square"><i class="fas fa-paper-plane text-lg"></i></button>
+                    </div>
+                </div>
+            </div>`,
+        settingsModal: `
+            <div class="wood-panel p-6 md:p-8 relative w-full max-w-md">
+                <button id="close-settings-btn" class="absolute top-4 right-4 w-10 h-10 bg-red-400 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-500 transition"><i class="fas fa-times"></i></button>
+                <h2 class="text-2xl font-bold text-center text-amber-800">设置</h2>
+                <div class="mt-4 space-y-4 text-left">
+                    <div>
+                        <label for="username" class="font-bold">你的昵称</label>
+                        <input type="text" id="username-input" class="input-field" placeholder="可爱的玩家">
+                    </div>
+                    <div>
+                        <label for="gemini-api" class="font-bold">Google Gemini API</label>
+                        <input type="password" id="gemini-api-input" class="input-field" placeholder="请填写API Key (SFW)">
+                    </div>
+                    <div>
+                        <label for="dzmm-api" class="font-bold">DZMM API</label>
+                        <input type="password" id="dzmm-api-input" class="input-field" placeholder="请填写API Key (NSFW)">
+                    </div>
+                    <p id="api-status" class="text-xs text-center text-gray-500">API Key 将在保存时进行验证。</p>
+                    <button id="save-settings-btn" class="w-full btn btn-green mt-4">保存设置</button>
+                </div>
+            </div>`,
+        passwordModal: `
+            <div class="wood-panel p-6 md:p-8 relative w-full max-w-sm text-center">
+                <h3 id="password-room-name" class="text-xl font-bold text-amber-800">进入加密房间</h3>
+                <p class="text-sm mt-2">这个房间需要密码才能进入</p>
+                <div class="mt-4"><input type="password" id="password-input" class="input-field text-center" placeholder="请输入密码"></div>
+                <div class="mt-6 flex space-x-4">
+                    <button id="cancel-password-btn" class="flex-1 btn bg-gray-400 text-white hover:bg-gray-500">取消</button>
+                    <button id="confirm-password-btn" class="flex-1 btn btn-orange">确认</button>
+                </div>
+            </div>`,
+        membersModal: `
+            <div class="wood-panel p-6 md:p-8 relative w-full max-w-sm">
+                <button id="close-members-btn" class="absolute top-4 right-4 w-10 h-10 bg-red-400 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-500 transition"><i class="fas fa-times"></i></button>
+                <h2 class="text-2xl font-bold text-center text-amber-800">房间成员</h2>
+                <div id="members-list" class="mt-4 space-y-3 max-h-64 overflow-y-auto no-scrollbar"></div>
+            </div>`,
+        messageContextMenu: `
+            <button id="reply-btn"><i class="fas fa-reply mr-2"></i>回复</button>
+            <button id="copy-btn"><i class="fas fa-copy mr-2"></i>复制</button>
+        `,
+        replyPreview: `
+             <div class="flex justify-between items-center text-sm">
+                <div>
+                    <p class="text-amber-700">正在回复 <span class="font-bold" id="reply-author"></span></p>
+                    <p class="text-gray-500 truncate" id="reply-content" style="max-width: 200px;"></p>
+                </div>
+                <button id="cancel-reply-btn" class="w-6 h-6 rounded-full hover:bg-red-200 flex items-center justify-center"><i class="fas fa-times text-red-500"></i></button>
+            </div>
+        `
+    };
+
+    // --- 全局状态 ---
+    const AppState = {
+        currentUser: null,
+        username: '你',
+        geminiApiKey: '',
+        dzmmApiKey: '',
+        currentRoomInfo: {},
+        currentRoomId: null,
+        selectedPrivateRoom: null, // For password modal
+        unsubscribeRoomListener: null,
+        unsubscribeMessagesListener: null,
+        unsubscribeMembersListener: null,
+        unsubscribeSelfMemberListener: null,
+        isAiReplying: false,
+        replyingToMessage: null,
+        longPressTimer: null,
+        longPressDuration: 500,
+        defaultPrompts: {
+            sfw: '你是一个友好、乐于助人的AI助手，请以可爱、积极乐观的风格进行对话。确保所有回答都是安全、无害且适合所有年龄段的。',
+            nsfw: '你是一个臭婊子，喜欢发骚，给用户展示自己的生殖器官。'
+        },
+        localChatHistory: [],
+    };
+
+    // --- DOM 元素缓存 ---
+    const DOMElements = {};
+
+    // --- UI 功能 ---
+    function updateApiReminder() {
+        const geminiMissing = !AppState.geminiApiKey;
+        const dzmmMissing = !AppState.dzmmApiKey;
+        const banner = DOMElements.apiReminderBanner;
+        
+        if (!geminiMissing && !dzmmMissing) {
+            banner.classList.add('hidden');
+            return;
+        }
+
+        let message = '';
+        if (geminiMissing && dzmmMissing) {
+            message = '提示：Gemini 和 DZMM API 均未设置。';
+        } else if (geminiMissing) {
+            message = '提示：Gemini API (SFW) 未设置。';
+        } else {
+            message = '提示：DZMM API (NSFW) 未设置。';
+        }
+        
+        banner.textContent = message;
+        banner.classList.remove('hidden');
+    }
+
+    // --- Firebase 核心功能 ---
+    function signInAnonymouslyIfNeeded() {
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                if (AppState.currentUser?.uid === user.uid) return; // Already initialized
+                AppState.currentUser = user;
+                if (DOMElements.userUuid) DOMElements.userUuid.textContent = user.uid;
+
+                // 设置或加载昵称
+                const savedUsername = localStorage.getItem('chatPartyUsername');
+                if (savedUsername) {
+                    AppState.username = savedUsername;
+                    DOMElements.usernameInput.value = savedUsername;
+                } else {
+                    AppState.username = `用户_${user.uid.slice(-4)}`;
+                    DOMElements.usernameInput.value = '';
+                }
+            } else {
+                try {
+                    await signInAnonymously(auth);
+                    // 监听器会自动再次触发，并进入上面的 if 块
+                } catch (error) {
+                    console.error("匿名登录失败:", error);
+                    alert("无法连接到服务器，请刷新页面重试。");
+                }
+            }
+        });
+    }
+
+    async function deleteRoom(roomId) {
+        console.log(`正在销毁房间: ${roomId}`);
+        const batch = writeBatch(db);
+
+        const messagesQuery = query(collection(db, "rooms", roomId, "messages"));
+        const membersQuery = query(collection(db, "rooms", roomId, "members"));
+
+        const [messagesSnapshot, membersSnapshot] = await Promise.all([
+            getDocs(messagesQuery),
+            getDocs(membersQuery)
+        ]);
+
+        messagesSnapshot.forEach(doc => batch.delete(doc.ref));
+        membersSnapshot.forEach(doc => batch.delete(doc.ref));
+        batch.delete(doc(db, "rooms", roomId));
+
+        await batch.commit();
+        console.log(`房间 ${roomId} 已销毁。`);
+    }
+
+    function listenForRooms() {
+        if (AppState.unsubscribeRoomListener) AppState.unsubscribeRoomListener();
+        
+        const q = query(collection(db, "rooms"), orderBy("createdAt", "desc"));
+        AppState.unsubscribeRoomListener = onSnapshot(q, (querySnapshot) => {
+            DOMElements.roomList.innerHTML = '';
+            if (querySnapshot.empty) {
+                DOMElements.roomList.innerHTML = '<p class="text-center text-gray-500">还没有人创建房间，快来创建第一个吧！</p>';
+                return;
+            }
+            querySnapshot.forEach((doc) => {
+                const room = doc.data();
+                const roomId = doc.id;
+                
+                if (room.hostLeftAt) {
+                    const now = Date.now();
+                    const leftAt = room.hostLeftAt.toDate().getTime();
+                    if ((now - leftAt) / 1000 > 180) {
+                        deleteRoom(roomId).catch(err => console.error("销毁房间失败:", err));
+                        return;
+                    }
+                }
+                
+                const roomElement = document.createElement('div');
+                roomElement.className = 'bg-lime-100/80 p-4 rounded-2xl border-2 border-lime-300/80 flex items-center justify-between cursor-pointer hover:border-lime-500/80 hover:bg-lime-200/80 transition';
+                roomElement.innerHTML = `<div class="flex-grow"><div class="flex items-center space-x-2"><h4 class="font-bold text-lg">${room.isPrivate ? '<i class="fas fa-lock text-sm text-amber-600 mr-1"></i>' : ''}${room.name}</h4></div><p class="text-sm text-gray-600"><span>模式: ${room.mode === 'free' ? '自由聊天' : '总结模式'}</span> | <span>房主: ${room.hostName}</span> | <span class="font-bold ${room.rating === 'nsfw' ? 'text-red-500' : 'text-green-600'}">${room.rating.toUpperCase()}</span></p></div><div class="text-center ml-4 flex-shrink-0"><p class="font-bold text-lg">${room.memberCount || 0}/${room.maxPlayers}</p><p class="text-xs text-gray-500">在线人数</p></div>`;
+                
+                roomElement.addEventListener('click', () => {
+                    // API Key check before joining
+                    if (room.rating === 'sfw' && !AppState.geminiApiKey) {
+                        alert("进入SFW房间需要设置 Gemini API Key。");
+                        return;
+                    }
+                    if (room.rating === 'nsfw' && !AppState.dzmmApiKey) {
+                        alert("进入NSFW房间需要设置 DZMM API Key。");
+                        return;
+                    }
+
+                    if (room.isPrivate) {
+                        AppState.selectedPrivateRoom = { id: roomId, ...room };
+                        DOMElements.passwordRoomName.textContent = `进入房间: ${room.name}`;
+                        showModal('passwordModal');
+                    } else {
+                        joinRoom(roomId);
+                    }
+                });
+                DOMElements.roomList.appendChild(roomElement);
+            });
+        });
+    }
+
+    async function joinRoom(roomId) {
+        if (!AppState.currentUser) return alert("请先登录！");
+        const roomDocRef = doc(db, "rooms", roomId);
+        const roomDoc = await getDoc(roomDocRef);
+
+        if (!roomDoc.exists()) {
+            alert("房间不存在或已被删除！");
+            return;
+        }
+
+        const roomData = roomDoc.data();
+        if ((roomData.memberCount || 0) >= roomData.maxPlayers) {
+            alert("房间已满！");
+            return;
+        }
+
+        const updateData = { memberCount: increment(1) };
+        if (AppState.currentUser.uid === roomData.hostId && roomData.hostLeftAt) {
+            updateData.hostLeftAt = null; // Host is rejoining
+        }
+        
+        await updateDoc(roomDocRef, updateData);
+        await setupChatRoom(roomId, roomData);
+        switchScreen('chatScreen');
+    }
+
+    async function leaveRoom() {
+        if (!AppState.currentRoomId || !AppState.currentUser) return;
+
+        const roomId = AppState.currentRoomId;
+        const userId = AppState.currentUser.uid;
+        const isHost = userId === AppState.currentRoomInfo.hostId;
+
+        const messagesColRef = collection(db, "rooms", roomId, "messages");
+        await addDoc(messagesColRef, {
+            role: 'System', author: '系统', content: `${AppState.username} 离开了房间。`, createdAt: serverTimestamp()
+        });
+        
+        if (AppState.unsubscribeMessagesListener) AppState.unsubscribeMessagesListener();
+        if (AppState.unsubscribeMembersListener) AppState.unsubscribeMembersListener();
+        if (AppState.unsubscribeSelfMemberListener) AppState.unsubscribeSelfMemberListener();
+        
+        const roomDocRef = doc(db, "rooms", roomId);
+        
+        if (isHost) {
+            await updateDoc(roomDocRef, { hostLeftAt: serverTimestamp() });
+        } else {
+            const memberDocRef = doc(db, "rooms", roomId, "members", userId);
+            try {
+                await deleteDoc(memberDocRef);
+                await updateDoc(roomDocRef, { memberCount: increment(-1) });
+            } catch (error) { console.error("离开房间时出错: ", error); }
+        }
+
+        AppState.currentRoomId = null;
+        AppState.currentRoomInfo = {};
+        AppState.localChatHistory = [];
+    }
+    
+    async function setupChatRoom(roomId, roomData) {
+        AppState.currentRoomId = roomId;
+        AppState.currentRoomInfo = roomData;
+        AppState.localChatHistory = [];
+        DOMElements.chatMessages.innerHTML = '';
+        DOMElements.chatRoomName.textContent = roomData.name;
+        
+        if (roomData.mode === 'summary') {
+            DOMElements.summaryFinishedBtn.classList.remove('hidden');
+        } else {
+            DOMElements.summaryFinishedBtn.classList.add('hidden');
+        }
+
+        const memberRef = doc(db, "rooms", roomId, "members", AppState.currentUser.uid);
+        await setDoc(memberRef, {
+            name: AppState.username, isFinished: false, uid: AppState.currentUser.uid
+        });
+
+        AppState.unsubscribeSelfMemberListener = onSnapshot(memberRef, (doc) => {
+            if (doc.exists() && AppState.currentRoomInfo.mode === 'summary') {
+                const isFinished = doc.data().isFinished;
+                const btn = DOMElements.summaryFinishedBtn;
+                if (isFinished) {
+                    btn.textContent = '已说完';
+                    btn.classList.add('btn-disabled');
+                    btn.classList.remove('btn-orange');
+                } else {
+                    btn.textContent = '我已说完';
+                    btn.classList.remove('btn-disabled');
+                    btn.classList.add('btn-orange');
+                }
+            }
+        });
+
+        const messagesColRef = collection(db, "rooms", roomId, "messages");
+        await addDoc(messagesColRef, {
+            role: 'System', author: '系统', content: `${AppState.username} 加入了房间。`, createdAt: serverTimestamp()
+        });
+
+        const messagesQuery = query(messagesColRef, orderBy("createdAt", "asc"));
+        AppState.unsubscribeMessagesListener = onSnapshot(messagesQuery, (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === "added") {
+                    const msgData = { id: change.doc.id, ...change.doc.data() };
+                    AppState.localChatHistory.push(msgData);
+                    addMessageToUI(msgData);
+                }
+            });
+        });
+    }
+
+    async function handleSendMessage() {
+        const text = DOMElements.chatInput.value.trim();
+        if (!text || AppState.isAiReplying || !AppState.currentRoomId) return;
+
+        const messagePayload = {
+            role: 'user', content: text, author: AppState.username,
+            authorId: AppState.currentUser.uid, createdAt: serverTimestamp(),
+            replyTo: AppState.replyingToMessage || null
+        };
+        
+        try {
+            const messagesColRef = collection(db, "rooms", AppState.currentRoomId, "messages");
+            const newDocRef = await addDoc(messagesColRef, messagePayload);
+            DOMElements.chatInput.value = '';
+            hideReplyPreview();
+            
+            if (AppState.currentRoomInfo.mode === 'free') {
+                triggerAIResponse({ id: newDocRef.id, ...messagePayload });
+            }
+        } catch (error) {
+            console.error("发送消息失败: ", error);
+        }
+    }
+    
+    function switchScreen(screenKey) {
+        const screenToShow = DOMElements.screens[screenKey];
+        const screenToHide = Object.values(DOMElements.screens).find(s => s && !s.classList.contains('hidden'));
+        
+        if (screenToHide && screenToHide !== screenToShow) {
+            screenToHide.classList.add('animate-leave');
+            screenToHide.addEventListener('animationend', () => {
+                screenToHide.classList.add('hidden');
+                screenToHide.classList.remove('animate-leave');
+                if (screenToShow) {
+                    screenToShow.classList.remove('hidden');
+                    screenToShow.classList.add('animate-enter');
+                    screenToShow.addEventListener('animationend', () => {
+                        screenToShow.classList.remove('animate-enter');
+                    }, { once: true });
+                }
+            }, { once: true });
+        } else if (!screenToHide && screenToShow) {
+             screenToShow.classList.remove('hidden');
+             screenToShow.classList.add('animate-enter');
+             screenToShow.addEventListener('animationend', () => {
+                screenToShow.classList.remove('animate-enter');
+            }, { once: true });
+        }
+    }
+
+    function showModal(modalKey) {
+        const modal = DOMElements.modals[modalKey];
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        modal.classList.add('modal-bg-enter');
+        const panel = modal.querySelector('.wood-panel');
+        if(panel) panel.classList.add('modal-content-enter');
+    }
+
+    function hideModal(modalKey) {
+        const modal = DOMElements.modals[modalKey];
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.classList.remove('modal-bg-enter');
+        const panel = modal.querySelector('.wood-panel');
+        if(panel) panel.classList.remove('modal-content-enter');
+    }
+
+    // --- API Key Verification ---
+    async function verifyGeminiApiKey(key) {
+        if (!key) return false;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${key}`;
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: "hello" }] }] })
+            });
+            return response.ok;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    async function verifyDzmmApiKey(key) {
+        if (!key) return false;
+        const apiUrl = 'https://www.gpt4novel.com/api/xiaoshuoai/ext/v1/chat/completions';
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+                body: JSON.stringify({ model: 'nalang-max-7-32K', messages: [{role: "user", content: "hello"}], stream: false })
+            });
+             return response.ok;
+        } catch(error) {
+            return false;
+        }
+    }
+    
+    // --- Member Status Management ---
+    async function resetAllMembersFinishedStatus() {
+        if (!AppState.currentRoomId) return;
+        try {
+            const batch = writeBatch(db);
+            const membersQuery = query(collection(db, "rooms", AppState.currentRoomId, "members"));
+            const membersSnapshot = await getDocs(membersQuery);
+            membersSnapshot.forEach(memberDoc => {
+                batch.update(memberDoc.ref, { isFinished: false });
+            });
+            await batch.commit();
+        } catch (error) {
+            console.error("重置成员状态失败:", error);
+        }
+    }
+
+
+    // --- AI API 调用 ---
+    async function callGeminiAPI(history, systemPrompt, isSummary) {
+        if (isSummary) {
+            await resetAllMembersFinishedStatus();
+        }
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${AppState.geminiApiKey}`;
+        const contents = history.map(msg => ({
+            role: msg.role === 'assistant' ? 'model' : 'user', parts: [{ text: `${msg.author}: ${msg.content}` }]
+        }));
+
+        const response = await fetch(apiUrl, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents, systemInstruction: { parts: [{ text: systemPrompt }] } })
+        });
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Gemini API 错误! Status: ${response.status}, Body: ${errorBody}`);
+        }
+        const result = await response.json();
+        return result.candidates[0].content.parts[0].text;
+    }
+
+    async function callDzmmAPI(history, systemPrompt, thinkingBubble, isSummary) {
+        if (isSummary) {
+             await resetAllMembersFinishedStatus();
+        }
+        const apiUrl = 'https://www.gpt4novel.com/api/xiaoshuoai/ext/v1/chat/completions';
+        const messages = [{ role: 'system', content: systemPrompt }, ...history.map(msg => ({ 
+            role: msg.role, content: `${msg.author}: ${msg.content}`
+        }))];
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AppState.dzmmApiKey}` },
+            body: JSON.stringify({ model: 'nalang-max-7-32K', messages, stream: true })
+        });
+
+        if (!response.ok) throw new Error(`DZMM API 错误! Status: ${response.status}`);
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let fullResponse = '';
+
+        if(thinkingBubble.isConnected) {
+            thinkingBubble.classList.remove('thinking');
+            thinkingBubble.querySelector('.text-content').textContent = '';
+        }
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            let newlineIndex;
+            while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+                const line = buffer.slice(0, newlineIndex).trim();
+                buffer = buffer.slice(newlineIndex + 1);
+                if (line.startsWith('data: ')) {
+                    try {
+                        const jsonStr = line.slice(6);
+                        if (jsonStr === '[DONE]') continue;
+                        const jsonData = JSON.parse(jsonStr);
+                        if (jsonData.choices?.[0]?.delta?.content) {
+                            const chunk = jsonData.choices[0].delta.content;
+                            fullResponse += chunk;
+                            if (thinkingBubble.isConnected) {
+                                thinkingBubble.querySelector('.text-content').textContent = fullResponse;
+                            }
+                        }
+                    } catch (e) { console.warn('Stream parsing error', e); }
+                }
+            }
+        }
+        return fullResponse;
+    }
+    
+    async function triggerAIResponse(lastUserMessage, isSummary = false) {
+        if (!AppState.currentRoomId) return;
+
+        const roomRating = AppState.currentRoomInfo.rating || 'sfw';
+        const requiredApiKey = roomRating === 'sfw' ? AppState.geminiApiKey : AppState.dzmmApiKey;
+        const apiKeyName = roomRating === 'sfw' ? 'Gemini API' : 'DZMM API';
+
+        if (!requiredApiKey) {
+            addMessageToUI({
+                id: crypto.randomUUID(), role: 'System',
+                content: `您的 ${apiKeyName} Key 未设置。请在右上角设置中填写后重试。该消息仅您可见。`, author: '系统'
+            });
+            if (lastUserMessage) {
+                const msgElem = document.getElementById(lastUserMessage.id);
+                if (msgElem) msgElem.style.opacity = '0.5';
+            }
+            return;
+        }
+
+        AppState.isAiReplying = true;
+        DOMElements.sendMessageBtn.disabled = true;
+
+        const aiThinkingMessage = { id: crypto.randomUUID(), role: 'assistant', content: '...', author: 'AI', replyTo: null };
+        const thinkingBubble = addMessageToUI(aiThinkingMessage);
+        thinkingBubble.classList.add('thinking');
+
+        try {
+            const defaultPrompt = AppState.defaultPrompts[roomRating];
+            const userRules = AppState.currentRoomInfo.aiRules;
+            
+            let systemPrompt = defaultPrompt;
+            if (userRules) systemPrompt += `\n\n此外，请严格遵守以下扮演规则：\n${userRules}`;
+
+            let historyForAPI = AppState.localChatHistory
+                .filter(msg => msg.role === 'user' && msg.id !== aiThinkingMessage.id)
+                .map(msg => ({ role: msg.role, content: msg.content, author: msg.author }));
+
+            if (isSummary) {
+                 historyForAPI.push({role: 'user', content: '请根据以上所有人的对话内容，进行一次详细的总结。', author: 'System'});
+            }
+            
+            let responseText = '';
+            if (roomRating === 'nsfw') {
+                responseText = await callDzmmAPI(historyForAPI, systemPrompt, thinkingBubble, isSummary);
+            } else {
+                responseText = await callGeminiAPI(historyForAPI, systemPrompt, isSummary);
+            }
+            
+            const messagesColRef = collection(db, "rooms", AppState.currentRoomId, "messages");
+            await addDoc(messagesColRef, {
+                role: 'assistant', content: responseText, author: 'AI', createdAt: serverTimestamp(),
+                replyTo: (AppState.currentRoomInfo.mode === 'free' && !isSummary) ? lastUserMessage : null
+            });
+            if (thinkingBubble.isConnected) thinkingBubble.parentElement.remove();
+
+        } catch (error) {
+            console.error('AI Error:', error);
+            const messagesColRef = collection(db, "rooms", AppState.currentRoomId, "messages");
+            await addDoc(messagesColRef, {
+                role: 'System', content: `AI出错了: ${error.message}`, author: '系统', createdAt: serverTimestamp()
+            });
+            if (thinkingBubble.isConnected) thinkingBubble.parentElement.remove();
+        } finally {
+            AppState.isAiReplying = false;
+            if (DOMElements.sendMessageBtn) DOMElements.sendMessageBtn.disabled = false;
+        }
+    }
+    
+    function addMessageToUI({ id, role, content, author, authorId, replyTo }) {
+        const container = DOMElements.chatMessages;
+        if (!container) return null;
+        
+        const messageWrapper = document.createElement('div');
+        messageWrapper.id = id;
+        
+        let bubbleClass = '', alignClass = '', authorHtml = '';
+        const isSelf = authorId === AppState.currentUser?.uid;
+
+        switch (role) {
+            case 'user':
+                bubbleClass = isSelf ? 'chat-bubble-self' : 'chat-bubble-other';
+                alignClass = isSelf ? 'justify-end' : 'justify-start';
+                authorHtml = `<div class="text-xs text-gray-400 mt-1 ${isSelf ? 'text-right' : ''}">${author}</div>`;
+                break;
+            case 'assistant':
+                bubbleClass = 'chat-bubble-ai'; alignClass = 'justify-start';
+                authorHtml = `<div class="text-xs text-gray-400 mt-1">${author}</div>`;
+                break;
+            case 'System':
+                messageWrapper.innerHTML = `<div class="chat-bubble-system">${content}</div>`;
+                container.appendChild(messageWrapper);
+                container.scrollTop = container.scrollHeight;
+                return messageWrapper.firstChild;
+        }
+
+        let replyHtml = '';
+        if (replyTo) {
+            replyHtml = `
+                <div class="reply-quote">
+                    <div class="author">${replyTo.author}</div>
+                    <div class="content">${replyTo.content}</div>
+                </div>`;
+        }
+        
+        messageWrapper.className = `flex ${alignClass}`;
+        messageWrapper.innerHTML = `
+            <div class="chat-bubble ${bubbleClass}" data-message-id="${id}">
+                <div class="message-content">
+                    ${replyHtml}
+                    <span class="text-content" style="user-select: text;"></span>
+                </div>
+                ${authorHtml}
+            </div>`;
+        messageWrapper.querySelector('.text-content').textContent = content;
+        
+        container.appendChild(messageWrapper);
+        container.scrollTop = container.scrollHeight;
+        return messageWrapper.querySelector('.chat-bubble');
+    }
+
+    function showReplyPreview(message) {
+        AppState.replyingToMessage = { author: message.author, content: message.content };
+        DOMElements.replyPreviewContainer.innerHTML = templates.replyPreview;
+        document.getElementById('reply-author').textContent = message.author;
+        document.getElementById('reply-content').textContent = message.content;
+        DOMElements.replyPreviewContainer.classList.remove('hidden');
+        document.getElementById('cancel-reply-btn').addEventListener('click', hideReplyPreview);
+    }
+    
+    function hideReplyPreview() {
+        AppState.replyingToMessage = null;
+        DOMElements.replyPreviewContainer.classList.add('hidden');
+        DOMElements.replyPreviewContainer.innerHTML = '';
+    }
+
+    function showContextMenu(targetBubble, event) {
+        const messageId = targetBubble.dataset.messageId;
+        const message = AppState.localChatHistory.find(m => m.id === messageId);
+        if (!message || message.role === 'System') return;
+        
+        const menu = DOMElements.messageContextMenu;
+        menu.innerHTML = templates.messageContextMenu;
+        menu.classList.remove('hidden');
+        menu.classList.add('flex');
+        
+        const rect = targetBubble.getBoundingClientRect();
+        let top = rect.top - menu.offsetHeight - 10;
+        let left = event.clientX;
+        if (top < 10) top = rect.bottom + 10;
+        if (left + menu.offsetWidth > window.innerWidth - 10) left = window.innerWidth - menu.offsetWidth - 10;
+        
+        menu.style.left = `${left}px`;
+        menu.style.top = `${top}px`;
+
+        menu.querySelector('#reply-btn').addEventListener('click', () => { showReplyPreview(message); hideContextMenu(); });
+        menu.querySelector('#copy-btn').addEventListener('click', () => { navigator.clipboard.writeText(message.content); hideContextMenu(); });
+    }
+
+    function hideContextMenu() {
+        DOMElements.messageContextMenu.classList.add('hidden');
+        DOMElements.messageContextMenu.classList.remove('flex');
+    }
+
+    async function checkAndTriggerSummary() {
+        if (!AppState.currentRoomId) return;
+        const membersQuery = query(collection(db, "rooms", AppState.currentRoomId, "members"));
+        const membersSnapshot = await getDocs(membersQuery);
+        if (membersSnapshot.empty) return;
+
+        const allMembers = membersSnapshot.docs.map(d => d.data());
+        if(allMembers.length < AppState.currentRoomInfo.memberCount) return;
+
+        const allFinished = allMembers.every(member => member.isFinished);
+        
+        if (allFinished) {
+            triggerAIResponse(null, true); 
+        }
+    }
+    
+    // --- 启动和事件绑定 ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // 1. 渲染模板
+        Object.keys(templates).forEach(key => {
+            const containerId = key.replace(/([A-Z])/g, "-$1").toLowerCase();
+            const container = document.getElementById(containerId);
+            if (container) container.innerHTML = templates[key];
+        });
+
+        // 2. 缓存DOM元素
+        Object.assign(DOMElements, {
+            screens: { mainMenu: document.getElementById('main-menu'), createRoomScreen: document.getElementById('create-room-screen'), aiSettingsScreen: document.getElementById('ai-settings-screen'), joinRoomScreen: document.getElementById('join-room-screen'), chatScreen: document.getElementById('chat-screen') },
+            modals: { settingsModal: document.getElementById('settings-modal'), passwordModal: document.getElementById('password-modal'), membersModal: document.getElementById('members-modal') },
+            messageContextMenu: document.getElementById('message-context-menu'), settingsBtn: document.getElementById('settings-btn'), userUuid: document.getElementById('user-uuid'), showCreateRoomBtn: document.getElementById('show-create-room-btn'), showJoinRoomBtn: document.getElementById('show-join-room-btn'), backToMainFromCreate: document.getElementById('back-to-main-from-create'), confirmCreateRoomBtn: document.getElementById('confirm-create-room-btn'), modeFreeRadio: document.getElementById('mode-free'), modeSummaryRadio: document.getElementById('mode-summary'), modeDescription: document.getElementById('mode-description'), privacyPrivateRadio: document.getElementById('privacy-private'), privacyPublicRadio: document.getElementById('privacy-public'), passwordContainer: document.getElementById('password-container'), playerCountSlider: document.getElementById('player-count'), playerCountDisplay: document.getElementById('player-count-display'), backToCreateFromAiSettings: document.getElementById('back-to-create-from-ai-settings'), confirmAiSettingsBtn: document.getElementById('confirm-ai-settings-btn'), manualTab: document.getElementById('manual-tab'), jsonTab: document.getElementById('json-tab'), manualInputView: document.getElementById('manual-input-view'), jsonImportView: document.getElementById('json-import-view'), jsonFileInput: document.getElementById('json-file-input'), jsonFileName: document.getElementById('json-file-name'), aiRulesTextarea: document.getElementById('ai-rules-textarea'), backToMainFromJoin: document.getElementById('back-to-main-from-join'), roomList: document.getElementById('room-list'), backToMainFromChat: document.getElementById('back-to-main-from-chat'), chatRoomName: document.getElementById('chat-room-name'), membersBtn: document.getElementById('members-btn'), chatMessages: document.getElementById('chat-messages'), replyPreviewContainer: document.getElementById('reply-preview-container'), summaryFinishedBtn: document.getElementById('summary-finished-btn'), chatInput: document.getElementById('chat-input'), sendMessageBtn: document.getElementById('send-message-btn'), closeSettingsBtn: document.getElementById('close-settings-btn'), usernameInput: document.getElementById('username-input'), geminiApiInput: document.getElementById('gemini-api-input'), dzmmApiInput: document.getElementById('dzmm-api-input'), saveSettingsBtn: document.getElementById('save-settings-btn'), passwordRoomName: document.getElementById('password-room-name'), passwordInput: document.getElementById('password-input'), cancelPasswordBtn: document.getElementById('cancel-password-btn'), confirmPasswordBtn: document.getElementById('confirm-password-btn'), closeMembersBtn: document.getElementById('close-members-btn'), membersList: document.getElementById('members-list'), apiStatus: document.getElementById('api-status'),
+            apiReminderBanner: document.getElementById('api-reminder-banner')
+        });
+
+        // 3. 登录并加载设置
+        signInAnonymouslyIfNeeded();
+        AppState.geminiApiKey = localStorage.getItem('chatPartyGeminiKey') || '';
+        AppState.dzmmApiKey = localStorage.getItem('chatPartyDzmmKey') || '';
+        DOMElements.geminiApiInput.value = AppState.geminiApiKey;
+        DOMElements.dzmmApiInput.value = AppState.dzmmApiKey;
+        updateApiReminder();
+
+        // 4. 绑定事件
+        DOMElements.showCreateRoomBtn.addEventListener('click', () => switchScreen('createRoomScreen'));
+        DOMElements.showJoinRoomBtn.addEventListener('click', () => { listenForRooms(); switchScreen('joinRoomScreen'); });
+        DOMElements.backToMainFromCreate.addEventListener('click', () => switchScreen('mainMenu'));
+        DOMElements.backToMainFromJoin.addEventListener('click', () => { if (AppState.unsubscribeRoomListener) AppState.unsubscribeRoomListener(); switchScreen('mainMenu'); });
+        DOMElements.backToMainFromChat.addEventListener('click', async () => { await leaveRoom(); switchScreen('mainMenu'); });
+        DOMElements.backToCreateFromAiSettings.addEventListener('click', () => switchScreen('createRoomScreen'));
+        
+        DOMElements.confirmCreateRoomBtn.addEventListener('click', () => {
+            const rating = document.querySelector('input[name="room-rating"]:checked').value;
+            if (rating === 'sfw' && !AppState.geminiApiKey) {
+                alert("创建SFW房间需要设置 Gemini API Key。");
+                return;
+            }
+            if (rating === 'nsfw' && !AppState.dzmmApiKey) {
+                alert("创建NSFW房间需要设置 DZMM API Key。");
+                return;
+            }
+            switchScreen('aiSettingsScreen');
+        });
+
+        DOMElements.confirmAiSettingsBtn.addEventListener('click', async () => {
+            if (!AppState.currentUser) return alert("用户未登录！");
+            const roomData = {
+                name: document.getElementById('room-name').value.trim() || '新房间',
+                mode: document.querySelector('input[name="chat-mode"]:checked').value,
+                rating: document.querySelector('input[name="room-rating"]:checked').value,
+                isPrivate: document.getElementById('privacy-private').checked,
+                password: document.getElementById('privacy-private').checked ? document.getElementById('room-password').value : null,
+                maxPlayers: parseInt(document.getElementById('player-count').value),
+                aiRules: DOMElements.aiRulesTextarea.value.trim(),
+                hostId: AppState.currentUser.uid, hostName: AppState.username,
+                createdAt: serverTimestamp(), memberCount: 0, hostLeftAt: null
+            };
+            try {
+                const docRef = await addDoc(collection(db, "rooms"), roomData);
+                await joinRoom(docRef.id);
+            } catch (error) { console.error("创建房间失败: ", error); }
+        });
+        
+        DOMElements.modeFreeRadio.addEventListener('change', () => { DOMElements.modeDescription.textContent = 'AI会回应每一位用户的每一句话。'; });
+        DOMElements.modeSummaryRadio.addEventListener('change', () => { DOMElements.modeDescription.textContent = '在所有用户点击"我已说完"后总结上文一次性回复。'; });
+        DOMElements.privacyPrivateRadio.addEventListener('change', () => DOMElements.passwordContainer.classList.remove('hidden'));
+        DOMElements.privacyPublicRadio.addEventListener('change', () => DOMElements.passwordContainer.classList.add('hidden'));
+        DOMElements.playerCountSlider.addEventListener('input', (e) => DOMElements.playerCountDisplay.textContent = e.target.value);
+        
+        DOMElements.sendMessageBtn.addEventListener('click', handleSendMessage);
+        DOMElements.chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } });
+        
+        DOMElements.summaryFinishedBtn.addEventListener('click', async () => {
+            if (!AppState.currentRoomId || !AppState.currentUser || DOMElements.summaryFinishedBtn.classList.contains('btn-disabled')) return;
+            const memberDocRef = doc(db, "rooms", AppState.currentRoomId, "members", AppState.currentUser.uid);
+            try {
+                const memberDoc = await getDoc(memberDocRef);
+                if (memberDoc.exists() && !memberDoc.data().isFinished) {
+                    await updateDoc(memberDocRef, { isFinished: true });
+                    checkAndTriggerSummary();
+                }
+            } catch (error) {
+                console.error("更新完成状态失败: ", error);
+            }
+        });
+
+        DOMElements.chatMessages.addEventListener('contextmenu', e => { e.preventDefault(); const tb = e.target.closest('.chat-bubble'); if (tb) showContextMenu(tb, e); });
+        document.addEventListener('click', (e) => { if (!e.target.closest('#message-context-menu')) hideContextMenu(); });
+
+        DOMElements.settingsBtn.addEventListener('click', () => showModal('settingsModal'));
+        DOMElements.closeSettingsBtn.addEventListener('click', () => hideModal('settingsModal'));
+        DOMElements.saveSettingsBtn.addEventListener('click', async (e) => {
+            const btn = e.target;
+            btn.disabled = true;
+            btn.textContent = '正在验证...';
+
+            const geminiInput = DOMElements.geminiApiInput;
+            const dzmmInput = DOMElements.dzmmApiInput;
+            geminiInput.classList.remove('error');
+            dzmmInput.classList.remove('error');
+
+            const newUsername = DOMElements.usernameInput.value.trim();
+            const newGeminiKey = geminiInput.value.trim();
+            const newDzmmKey = dzmmInput.value.trim();
+            
+            let geminiOk = true;
+            let dzmmOk = true;
+
+            // Only verify if the key is new and not empty.
+            if (newGeminiKey && newGeminiKey !== AppState.geminiApiKey) {
+                geminiOk = await verifyGeminiApiKey(newGeminiKey);
+                if (!geminiOk) geminiInput.classList.add('error');
+            }
+            if (newDzmmKey && newDzmmKey !== AppState.dzmmApiKey) {
+                dzmmOk = await verifyDzmmApiKey(newDzmmKey);
+                if (!dzmmOk) dzmmInput.classList.add('error');
+            }
+
+            if (geminiOk && dzmmOk) {
+                localStorage.setItem('chatPartyUsername', newUsername);
+                AppState.username = newUsername || `用户_${AppState.currentUser.uid.slice(-4)}`;
+                
+                // Save or remove Gemini key
+                if (newGeminiKey) {
+                    localStorage.setItem('chatPartyGeminiKey', newGeminiKey);
+                    AppState.geminiApiKey = newGeminiKey;
+                } else {
+                    localStorage.removeItem('chatPartyGeminiKey');
+                    AppState.geminiApiKey = '';
+                }
+                
+                // Save or remove DZMM key
+                if (newDzmmKey) {
+                    localStorage.setItem('chatPartyDzmmKey', newDzmmKey);
+                    AppState.dzmmApiKey = newDzmmKey;
+                } else {
+                    localStorage.removeItem('chatPartyDzmmKey');
+                    AppState.dzmmApiKey = '';
+                }
+
+                updateApiReminder();
+
+                DOMElements.apiStatus.textContent = "保存成功！";
+                DOMElements.apiStatus.style.color = 'green';
+                setTimeout(() => {
+                    hideModal('settingsModal');
+                    DOMElements.apiStatus.textContent = "API Key 将在保存时进行验证。";
+                    DOMElements.apiStatus.style.color = '';
+                }, 1000);
+            } else {
+                DOMElements.apiStatus.textContent = "API Key 验证失败，请检查后重试。";
+                DOMElements.apiStatus.style.color = 'red';
+            }
+            
+            btn.disabled = false;
+            btn.textContent = '保存设置';
+        });
+
+        DOMElements.membersBtn.addEventListener('click', () => {
+            if (!AppState.currentRoomId) return;
+            if (AppState.unsubscribeMembersListener) AppState.unsubscribeMembersListener();
+            const membersQuery = query(collection(db, "rooms", AppState.currentRoomId, "members"));
+            DOMElements.membersList.innerHTML = '<p class="text-center text-gray-500">正在加载...</p>';
+            AppState.unsubscribeMembersListener = onSnapshot(membersQuery, (snapshot) => {
+                DOMElements.membersList.innerHTML = '';
+                snapshot.forEach((doc) => {
+                    const member = doc.data();
+                    const memberEl = document.createElement('div');
+                    memberEl.className = 'flex items-center justify-between bg-lime-100/80 p-3 rounded-lg';
+                    
+                    let statusTags = [];
+                    if (member.uid === AppState.currentRoomInfo.hostId) {
+                        statusTags.push('<span class="text-xs bg-amber-400 text-white px-2 py-0.5 rounded-full">房主</span>');
+                    }
+                    if (AppState.currentRoomInfo.mode === 'summary') {
+                         const summaryStatus = member.isFinished
+                            ? '<span class="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">已说完</span>'
+                            : '<span class="text-xs bg-gray-400 text-white px-2 py-0.s5 rounded-full">等待中</span>';
+                        statusTags.push(summaryStatus);
+                    }
+
+                    memberEl.innerHTML = `<span class="font-bold">${member.name}</span><div class="flex items-center gap-1">${statusTags.join('')}</div>`;
+                    DOMElements.membersList.appendChild(memberEl);
+                });
+            });
+            showModal('membersModal');
+        });
+        DOMElements.closeMembersBtn.addEventListener('click', () => { if (AppState.unsubscribeMembersListener) AppState.unsubscribeMembersListener(); hideModal('membersModal'); });
+
+        DOMElements.cancelPasswordBtn.addEventListener('click', () => hideModal('passwordModal'));
+        DOMElements.confirmPasswordBtn.addEventListener('click', () => {
+            if (AppState.selectedPrivateRoom && DOMElements.passwordInput.value === AppState.selectedPrivateRoom.password) {
+                hideModal('passwordModal');
+                joinRoom(AppState.selectedPrivateRoom.id);
+                DOMElements.passwordInput.value = '';
+            } else {
+                alert("密码错误！");
+                DOMElements.passwordInput.classList.add('border-red-500');
+                setTimeout(()=> DOMElements.passwordInput.classList.remove('border-red-500'), 1000);
+            }
+        });
+        
+        // 5. 显示初始屏幕
+        switchScreen('mainMenu');
+    });
+</script>
+
+</body>
+</html>
+
+
