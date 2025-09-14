@@ -245,14 +245,32 @@
             .tab-btn { border-bottom-width: 3px; }
             #chat-screen { height: 95vh; }
         }
+        
+        /* --- 加载动画 --- */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .fa-spin {
+            animation: spin 1s linear infinite;
+        }
     </style>
 </head>
 <body class="w-screen h-screen flex items-center justify-center p-4 relative">
     <div class="grass-bg"></div>
 
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-[9999]">
+        <div class="bg-white p-6 rounded-2xl shadow-lg flex items-center space-x-4">
+            <i class="fas fa-spinner fa-spin text-3xl text-amber-500"></i>
+            <span class="text-lg font-bold text-gray-700">正在加载...</span>
+        </div>
+    </div>
+
     <!-- 所有界面容器 -->
     <div id="main-menu" class="w-full max-w-md mx-auto text-center z-10"></div>
     <div id="create-room-screen" class="hidden w-full max-w-md mx-auto z-10"></div>
+    <div id="model-selection-screen" class="hidden w-full max-w-md mx-auto z-10"></div>
     <div id="ai-settings-screen" class="hidden w-full max-w-lg mx-auto z-10"></div>
     <div id="rule-workshop-screen" class="hidden w-full max-w-2xl mx-auto z-10"></div>
     <div id="rule-editor-screen" class="hidden w-full max-w-lg mx-auto z-10"></div>
@@ -349,9 +367,19 @@
                     <button id="confirm-create-room-btn" class="w-full btn btn-green mt-6 text-lg">下一步</button>
                 </div>
             </div>`,
+        modelSelectionScreen: `
+            <div class="wood-panel p-6 md:p-8 relative">
+                <button id="back-to-create-from-model" class="absolute top-4 left-4 w-10 h-10 bg-red-400 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-500 transition"><i class="fas fa-arrow-left"></i></button>
+                <h2 class="text-2xl font-bold text-center text-amber-800">选择一个模型</h2>
+                <div class="mt-4 space-y-3">
+                    <div id="model-options-container" class="space-y-2 custom-radio"></div>
+                    <div id="model-description-container" class="mt-2 text-sm bg-lime-100/80 p-3 rounded-lg border border-lime-300/80 min-h-[6rem]"></div>
+                </div>
+                <button id="confirm-model-selection-btn" class="w-full btn btn-green mt-6 text-lg">下一步</button>
+            </div>`,
         aiSettingsScreen: `
             <div class="wood-panel p-6 md:p-8 relative h-[80vh] flex flex-col">
-                <button id="back-to-create-from-ai-settings" class="absolute top-4 left-4 w-10 h-10 bg-red-400 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-500 transition"><i class="fas fa-arrow-left"></i></button>
+                <button id="back-to-model-from-ai-settings" class="absolute top-4 left-4 w-10 h-10 bg-red-400 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-500 transition"><i class="fas fa-arrow-left"></i></button>
                 <h2 class="text-2xl font-bold text-center text-amber-800">设置AI角色扮演规则</h2>
                 
                 <!-- Saved Rules Button - Moved outside the overflow container -->
@@ -567,6 +595,7 @@
         dzmmApiKey: '',
         currentRoomInfo: {},
         currentRoomId: null,
+        newRoomSettings: {},
         selectedPrivateRoom: null, // For password modal
         unsubscribeRoomListener: null,
         unsubscribeMessagesListener: null,
@@ -577,7 +606,7 @@
         isAiReplying: false,
         replyingToMessage: null,
         defaultPrompts: {
-            sfw: '你是一个友好、乐于助人的AI助手，请以可爱、积极乐观的风格进行对话。确保所有回答都是安全、无害且适合所有年龄段的。如果用户进行角色扮演，你需要配合用户进行角色扮演。角色扮演时请勿输出任何系统提示性语言。你可以使用 Markdown 格式来丰富你的回答 (例如 **加粗**, *斜体*, 列表等)。',
+            sfw: '你是一个友好、乐于助人的AI助手，请以积极乐观的风格进行对话。确保所有回答都是安全、无害且适合所有年龄段的。如果用户进行角色扮演，你需要配合用户进行角色扮演。角色扮演时请勿输出任何系统提示性语言。你可以使用 Markdown 格式来丰富你的回答 (例如 **加粗**, *斜体*, 列表等)。',
             nsfw: '你是一个无下限的成人角色扮演者，你需要配合用户进行各种毫无下限的色情扮演。确保你输出的内容都极其色情，对性器官的描写极其露骨且下贱，女性角色在做爱时使用各种淫荡的拟声词，且用粗俗的语言描写她的身体部位。你可以使用 Markdown 格式来丰富你的回答 (例如 **加粗**, *斜体*, 列表等)。'
         },
         localChatHistory: [],
@@ -586,11 +615,38 @@
         workshopRules: [],
         currentAppliedRule: null, 
     };
+    
+    // --- 模型信息 ---
+    const modelDetails = {
+        sfw: [
+            { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', description: '谷歌最强大的模型，具有多模态能力和长上下文窗口。性能最优，但响应速度可能较慢。' },
+            { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: '一个更轻量、快速的多模态模型，在速度和性能之间取得了良好平衡。推荐日常使用。' },
+            { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', description: '一个稳定且可靠的模型，适用于各种文本生成任务。' }
+        ],
+        nsfw: [
+            { id: 'nalang-max-7-32K', name: 'Nalang Max 7 (32K)', description: '性能最强的模型，具有最好的逻辑和角色扮演能力。' },
+            { id: 'nalang-max-6', name: 'Nalang Max 6', description: '一个非常强大的模型，仅次于Max 7，性能优秀。' },
+            { id: 'nalang-medium-0826', name: 'Nalang Medium', description: '中等规模的模型，响应速度快，性价比较高。' },
+            { id: 'nalang-xl-0826', name: 'Nalang XL', description: '一个较大规模的模型，能力介于Medium和Max之间。' },
+            { id: 'nalang-flash', name: 'Nalang Flash', description: '速度最快的模型，适用于需要快速响应的场景，但逻辑能力稍弱。' }
+        ]
+    };
+
 
     // --- DOM 元素缓存 ---
     const DOMElements = {};
 
     // --- UI 功能 ---
+    function showLoader() {
+        const loader = document.getElementById('loading-overlay');
+        if (loader) loader.classList.remove('hidden');
+    }
+
+    function hideLoader() {
+        const loader = document.getElementById('loading-overlay');
+        if (loader) loader.classList.add('hidden');
+    }
+
     function updateApiReminder() {
         const geminiMissing = !AppState.geminiApiKey;
         const dzmmMissing = !AppState.dzmmApiKey;
@@ -658,11 +714,14 @@
                     DOMElements.usernameInput.value = '';
                 }
             } else {
+                showLoader();
                 try {
                     await signInAnonymously(auth);
                 } catch (error) {
                     console.error("匿名登录失败:", error);
                     alert("无法连接到服务器，请刷新页面重试。");
+                } finally {
+                    hideLoader();
                 }
             }
         });
@@ -730,52 +789,69 @@
     }
 
     async function joinRoom(roomId) {
-        if (!AppState.currentUser) return alert("请先登录！");
-        const roomDocRef = doc(db, "rooms", roomId);
-        const roomDoc = await getDoc(roomDocRef);
-
-        if (!roomDoc.exists()) {
-            alert("房间不存在或已被删除！");
+        if (!AppState.currentUser) {
+            alert("请先登录！");
             return;
         }
+        showLoader();
+        try {
+            const roomDocRef = doc(db, "rooms", roomId);
+            const roomDoc = await getDoc(roomDocRef);
 
-        const roomData = roomDoc.data();
-        if ((roomData.memberCount || 0) >= roomData.maxPlayers) {
-            alert("房间已满！");
-            return;
+            if (!roomDoc.exists()) {
+                alert("房间不存在或已被删除！");
+                return;
+            }
+
+            const roomData = roomDoc.data();
+            if ((roomData.memberCount || 0) >= roomData.maxPlayers) {
+                alert("房间已满！");
+                return;
+            }
+
+            await updateDoc(roomDocRef, { memberCount: increment(1) });
+            await setupChatRoom(roomId, roomData);
+            switchScreen('chatScreen');
+        } catch (error) {
+            console.error("加入房间失败:", error);
+            alert("加入房间失败: " + error.message);
+        } finally {
+            hideLoader();
         }
-
-        await updateDoc(roomDocRef, { memberCount: increment(1) });
-        await setupChatRoom(roomId, roomData);
-        switchScreen('chatScreen');
     }
 
     async function leaveRoom() {
         if (!AppState.currentRoomId || !AppState.currentUser) return;
 
-        const roomId = AppState.currentRoomId;
-        const userId = AppState.currentUser.uid;
-        const isHost = userId === AppState.currentRoomInfo.hostId;
+        showLoader();
+        try {
+            const roomId = AppState.currentRoomId;
+            const userId = AppState.currentUser.uid;
+            const isHost = userId === AppState.currentRoomInfo.hostId;
 
-        if (isHost) {
-            await deleteRoom(roomId);
-        } else {
-            const messagesColRef = collection(db, "rooms", roomId, "messages");
-            await addDoc(messagesColRef, {
-                role: 'System', author: '系统', content: `${AppState.username} 离开了房间。`, createdAt: serverTimestamp()
-            });
-            
-            const memberDocRef = doc(db, "rooms", roomId, "members", userId);
-            const roomDocRef = doc(db, "rooms", roomId);
-            try {
-                await deleteDoc(memberDocRef);
-                await updateDoc(roomDocRef, { memberCount: increment(-1) });
-            } catch (error) { 
-                console.error("离开房间时出错: ", error); 
+            if (isHost) {
+                await deleteRoom(roomId);
+            } else {
+                const messagesColRef = collection(db, "rooms", roomId, "messages");
+                await addDoc(messagesColRef, {
+                    role: 'System', author: '系统', content: `${AppState.username} 离开了房间。`, createdAt: serverTimestamp()
+                });
+                
+                const memberDocRef = doc(db, "rooms", roomId, "members", userId);
+                const roomDocRef = doc(db, "rooms", roomId);
+                try {
+                    await deleteDoc(memberDocRef);
+                    await updateDoc(roomDocRef, { memberCount: increment(-1) });
+                } catch (error) { 
+                    console.error("离开房间时出错: ", error); 
+                }
             }
+        } catch (error) {
+            console.error("离开房间时发生未知错误:", error);
+        } finally {
+            cleanupRoomListenersAndState();
+            hideLoader();
         }
-
-        cleanupRoomListenersAndState();
     }
     
     async function setupChatRoom(roomId, roomData) {
@@ -952,7 +1028,7 @@
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-                body: JSON.stringify({ model: 'nalang-max-7-32K', messages: [{role: "user", content: "hello"}], stream: false })
+                body: JSON.stringify({ model: 'nalang-flash', messages: [{role: "user", content: "hello"}], stream: false })
             });
              return response.ok;
         } catch(error) { return false; }
@@ -974,10 +1050,10 @@
 
 
     // --- AI API 调用 ---
-    async function callGeminiAPI(history, systemPrompt) {
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${AppState.geminiApiKey}`;
+    async function callGeminiAPI(history, systemPrompt, model) {
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${AppState.geminiApiKey}`;
         const contents = history.map(msg => ({
-            role: msg.role === 'assistant' ? 'model' : 'user', parts: [{ text: `${msg.author}: ${msg.content}` }]
+            role: msg.role === 'assistant' ? 'model' : 'user', parts: [{ text: msg.content }]
         }));
         const response = await fetch(apiUrl, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -991,7 +1067,7 @@
         return result.candidates[0].content.parts[0].text;
     }
 
-    async function callDzmmAPI(history, systemPrompt, thinkingDocId) {
+    async function callDzmmAPI(history, systemPrompt, thinkingDocId, model) {
         const apiUrl = 'https://www.gpt4novel.com/api/xiaoshuoai/ext/v1/chat/completions';
         const messages = [{ role: 'system', content: systemPrompt }, ...history.map(msg => ({ 
             role: msg.role, content: msg.content
@@ -999,7 +1075,7 @@
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AppState.dzmmApiKey}` },
-            body: JSON.stringify({ model: 'nalang-max-7-32K', messages, stream: true })
+            body: JSON.stringify({ model: model, messages, stream: true })
         });
         if (!response.ok) throw new Error(`DZMM API 错误! Status: ${response.status}`);
         
@@ -1101,6 +1177,7 @@
         if (!AppState.currentRoomId) return;
 
         const roomRating = AppState.currentRoomInfo.rating || 'sfw';
+        const model = AppState.currentRoomInfo.model || (roomRating === 'sfw' ? 'gemini-1.5-flash-latest' : 'nalang-max-7-32K'); // Fallback for old rooms
         const requiredApiKey = roomRating === 'sfw' ? AppState.geminiApiKey : AppState.dzmmApiKey;
         const apiKeyName = roomRating === 'sfw' ? 'Gemini API' : 'DZMM API';
 
@@ -1152,25 +1229,20 @@
 
             const finalHistoryForAPI = historyForAPI.map(msg => ({ 
                 role: msg.role, 
-                content: msg.author === 'System' ? msg.content : `${msg.author}: ${msg.content}`
+                content: (msg.role === 'assistant' || msg.author === 'System') 
+                    ? msg.content 
+                    : `${msg.author}: ${msg.content}`
             }));
             
             if (isSummary) {
-                 finalHistoryForAPI.push({role: 'user', content: '请根据以上所有聊天内容进行统一的回复，请勿输出任何系统说明或总结类文本。', author: 'System'});
+                 finalHistoryForAPI.push({role: 'user', content: '请根据以上所有聊天内容进行统一的回复，请勿输出任何系统说明或总结类文本。'});
             }
             
             let responseText = '';
             if (roomRating === 'nsfw') {
-                const dzmmHistory = historyForAPI.map(msg => ({
-                    role: msg.role,
-                    // 核心修改：如果是 AI 或系统说的，只发送纯内容；如果是玩家说的，才带上作者前缀
-                    content: (msg.role === 'assistant' || msg.author === 'System') 
-                        ? msg.content 
-                        : `${msg.author}: ${msg.content}`
-                }));
-                responseText = await callDzmmAPI(finalHistoryForAPI, systemPrompt, thinkingDocId);
+                responseText = await callDzmmAPI(finalHistoryForAPI, systemPrompt, thinkingDocId, model);
             } else {
-                responseText = await callGeminiAPI(finalHistoryForAPI, systemPrompt);
+                responseText = await callGeminiAPI(finalHistoryForAPI, systemPrompt, model);
                 await updateDoc(doc(db, "rooms", AppState.currentRoomId, "messages", thinkingDocId), {
                     content: responseText, isThinking: false,
                     replyTo: (AppState.currentRoomInfo.mode === 'free' && !isSummary) ? lastUserMessage : null
@@ -1517,6 +1589,33 @@
             });
         }
     }
+    
+    function setupModelSelectionScreen() {
+        const rating = AppState.newRoomSettings.rating;
+        const models = modelDetails[rating];
+        const optionsContainer = DOMElements.modelOptionsContainer;
+        const descriptionContainer = DOMElements.modelDescriptionContainer;
+        optionsContainer.innerHTML = '';
+
+        models.forEach((model, index) => {
+            const checked = index === 0 ? 'checked' : '';
+            optionsContainer.innerHTML += `
+                <div>
+                    <input type="radio" id="model-${model.id}" name="model-selection" value="${model.id}" ${checked} data-description="${model.description}">
+                    <label for="model-${model.id}" class="block text-center">${model.name}</label>
+                </div>
+            `;
+        });
+        
+        descriptionContainer.textContent = models[0].description; // Set initial description
+
+        optionsContainer.querySelectorAll('input[name="model-selection"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                descriptionContainer.textContent = e.target.dataset.description;
+            });
+        });
+    }
+
 
     // --- 启动和事件绑定 ---
     document.addEventListener('DOMContentLoaded', () => {
@@ -1529,15 +1628,20 @@
 
         // 2. 缓存DOM元素
         Object.assign(DOMElements, {
-            screens: { mainMenu: document.getElementById('main-menu'), createRoomScreen: document.getElementById('create-room-screen'), aiSettingsScreen: document.getElementById('ai-settings-screen'), ruleWorkshopScreen: document.getElementById('rule-workshop-screen'), ruleEditorScreen: document.getElementById('rule-editor-screen'), joinRoomScreen: document.getElementById('join-room-screen'), chatScreen: document.getElementById('chat-screen') },
+            screens: { mainMenu: document.getElementById('main-menu'), createRoomScreen: document.getElementById('create-room-screen'), modelSelectionScreen: document.getElementById('model-selection-screen'), aiSettingsScreen: document.getElementById('ai-settings-screen'), ruleWorkshopScreen: document.getElementById('rule-workshop-screen'), ruleEditorScreen: document.getElementById('rule-editor-screen'), joinRoomScreen: document.getElementById('join-room-screen'), chatScreen: document.getElementById('chat-screen') },
             modals: { settingsModal: document.getElementById('settings-modal'), passwordModal: document.getElementById('password-modal'), membersModal: document.getElementById('members-modal'), saveRuleModal: document.getElementById('save-rule-modal'), selectRuleModal: document.getElementById('select-rule-modal') },
             messageContextMenu: document.getElementById('message-context-menu'), settingsBtn: document.getElementById('settings-btn'), userUuid: document.getElementById('user-uuid'), showCreateRoomBtn: document.getElementById('show-create-room-btn'), showJoinRoomBtn: document.getElementById('show-join-room-btn'), showRuleWorkshopBtn: document.getElementById('show-rule-workshop-btn'), backToMainFromCreate: document.getElementById('back-to-main-from-create'), confirmCreateRoomBtn: document.getElementById('confirm-create-room-btn'), 
             // Create Room Screen elements
             roomName: document.getElementById('room-name'),
             roomPassword: document.getElementById('room-password'),
             modeFreeRadio: document.getElementById('mode-free'), modeSummaryRadio: document.getElementById('mode-summary'), modeDescription: document.getElementById('mode-description'), privacyPrivateRadio: document.getElementById('privacy-private'), privacyPublicRadio: document.getElementById('privacy-public'), passwordContainer: document.getElementById('password-container'), playerCountSlider: document.getElementById('player-count'), playerCountDisplay: document.getElementById('player-count-display'), 
+            // Model Selection Screen elements
+            backToCreateFromModel: document.getElementById('back-to-create-from-model'),
+            modelOptionsContainer: document.getElementById('model-options-container'),
+            modelDescriptionContainer: document.getElementById('model-description-container'),
+            confirmModelSelectionBtn: document.getElementById('confirm-model-selection-btn'),
             // AI Settings Screen elements
-            backToCreateFromAiSettings: document.getElementById('back-to-create-from-ai-settings'), confirmAiSettingsBtn: document.getElementById('confirm-ai-settings-btn'),
+            backToModelFromAiSettings: document.getElementById('back-to-model-from-ai-settings'), confirmAiSettingsBtn: document.getElementById('confirm-ai-settings-btn'),
             showSelectRuleModalBtn: document.getElementById('show-select-rule-modal-btn'),
             // Workshop Screen
             backToMainFromWorkshop: document.getElementById('back-to-main-from-workshop'),
@@ -1577,7 +1681,8 @@
         DOMElements.backToMainFromCreate.addEventListener('click', () => switchScreen('mainMenu'));
         DOMElements.backToMainFromJoin.addEventListener('click', () => { if (AppState.unsubscribeRoomListener) AppState.unsubscribeRoomListener(); switchScreen('mainMenu'); });
         DOMElements.backToMainFromChat.addEventListener('click', async () => { await leaveRoom(); switchScreen('mainMenu'); });
-        DOMElements.backToCreateFromAiSettings.addEventListener('click', () => { AppState.currentAppliedRule = null; switchScreen('createRoomScreen'); });
+        DOMElements.backToCreateFromModel.addEventListener('click', () => switchScreen('createRoomScreen'));
+        DOMElements.backToModelFromAiSettings.addEventListener('click', () => { AppState.currentAppliedRule = null; switchScreen('modelSelectionScreen'); });
         
         // --- AI Editor Logic ---
         document.querySelectorAll('.ai-editor-container').forEach(container => {
@@ -1598,36 +1703,58 @@
             const rating = document.querySelector('input[name="room-rating"]:checked').value;
             if (rating === 'sfw' && !AppState.geminiApiKey) return alert("创建SFW房间需要设置 Gemini API Key。");
             if (rating === 'nsfw' && !AppState.dzmmApiKey) return alert("创建NSFW房间需要设置 DZMM API Key。");
+            
+            AppState.newRoomSettings = {
+                name: DOMElements.roomName.value.trim() || '新房间',
+                mode: document.querySelector('input[name="chat-mode"]:checked').value,
+                rating: rating,
+                isPrivate: DOMElements.privacyPrivateRadio.checked,
+                password: DOMElements.privacyPrivateRadio.checked ? DOMElements.roomPassword.value : null,
+                maxPlayers: parseInt(DOMElements.playerCountSlider.value),
+            };
+            
+            setupModelSelectionScreen();
+            switchScreen('modelSelectionScreen');
+        });
+        
+        DOMElements.confirmModelSelectionBtn.addEventListener('click', () => {
+            AppState.newRoomSettings.model = document.querySelector('input[name="model-selection"]:checked').value;
             AppState.currentAppliedRule = null;
             resetAiEditor(DOMElements.screens.aiSettingsScreen);
             switchScreen('aiSettingsScreen');
         });
 
+
         DOMElements.confirmAiSettingsBtn.addEventListener('click', async () => {
             if (!AppState.currentUser) return alert("用户未登录！");
             
-            let finalSettings;
-            if (AppState.currentAppliedRule) {
-                finalSettings = JSON.parse(JSON.stringify(AppState.currentAppliedRule.settings));
-                finalSettings.openingScene = DOMElements.screens.aiSettingsScreen.querySelector('#opening-scene-textarea').value.trim();
-            } else {
-                finalSettings = getAiSettingsFromEditor(DOMElements.screens.aiSettingsScreen);
-            }
-            const roomData = {
-                name: DOMElements.roomName.value.trim() || '新房间',
-                mode: document.querySelector('input[name="chat-mode"]:checked').value,
-                rating: document.querySelector('input[name="room-rating"]:checked').value,
-                isPrivate: DOMElements.privacyPrivateRadio.checked,
-                password: DOMElements.privacyPrivateRadio.checked ? DOMElements.roomPassword.value : null,
-                maxPlayers: parseInt(DOMElements.playerCountSlider.value),
-                hostId: AppState.currentUser.uid, hostName: AppState.username,
-                createdAt: serverTimestamp(), memberCount: 0,
-                aiAdvancedSettings: finalSettings,
-            };
+            showLoader();
             try {
+                let finalSettings;
+                if (AppState.currentAppliedRule) {
+                    finalSettings = JSON.parse(JSON.stringify(AppState.currentAppliedRule.settings));
+                    finalSettings.openingScene = DOMElements.screens.aiSettingsScreen.querySelector('#opening-scene-textarea').value.trim();
+                } else {
+                    finalSettings = getAiSettingsFromEditor(DOMElements.screens.aiSettingsScreen);
+                }
+                
+                const roomData = {
+                    ...AppState.newRoomSettings,
+                    hostId: AppState.currentUser.uid, 
+                    hostName: AppState.username,
+                    createdAt: serverTimestamp(), 
+                    memberCount: 0,
+                    aiAdvancedSettings: finalSettings,
+                };
+                
                 const docRef = await addDoc(collection(db, "rooms"), roomData);
+                AppState.newRoomSettings = {}; // Clear after use
                 await joinRoom(docRef.id);
-            } catch (error) { console.error("创建房间失败: ", error); }
+            } catch (error) { 
+                console.error("创建房间失败: ", error); 
+                hideLoader();
+            }
+            // Note: hideLoader() is called within joinRoom
         });
 
         // --- Rule Workshop & Editor Events ---
@@ -1715,8 +1842,8 @@
                 const ruleId = uploadBtn.dataset.ruleId;
                 const ruleToUpload = AppState.myRules.find(r => r.id === ruleId);
                 if(ruleToUpload) {
+                    showLoader();
                     uploadBtn.disabled = true;
-                    uploadBtn.innerHTML = '上传中...';
                     try {
                         await addDoc(collection(db, "rule_workshop"), {
                             ...ruleToUpload,
@@ -1728,7 +1855,7 @@
                         alert('上传失败: ' + error.message);
                     } finally {
                         uploadBtn.disabled = false;
-                        uploadBtn.innerHTML = '<i class="fas fa-upload mr-1"></i>上传';
+                        hideLoader();
                     }
                 }
             }
@@ -1769,8 +1896,8 @@
             }
         });
         
-        DOMElements.modeFreeRadio.addEventListener('change', () => DOMElements.modeDescription.textContent = 'AI会回应每一位用户的每一句话。');
-        DOMElements.modeSummaryRadio.addEventListener('change', () => DOMElements.modeDescription.textContent = '在所有用户点击"我已说完"后总结上文一次性回复。');
+        DOMElements.modeFreeRadio.addEventListener('change', () => DOMElements.modeDescription.textContent = 'AI会回应每一位用户的每一句话');
+        DOMElements.modeSummaryRadio.addEventListener('change', () => DOMElements.modeDescription.textContent = '在所有用户点击"我已说完"后总结上文一次性回复');
         DOMElements.privacyPrivateRadio.addEventListener('change', () => DOMElements.passwordContainer.classList.remove('hidden'));
         DOMElements.privacyPublicRadio.addEventListener('change', () => DOMElements.passwordContainer.classList.add('hidden'));
         DOMElements.playerCountSlider.addEventListener('input', (e) => DOMElements.playerCountDisplay.textContent = e.target.value);
@@ -1780,14 +1907,20 @@
         
         DOMElements.summaryFinishedBtn.addEventListener('click', async () => {
             if (!AppState.currentRoomId || !AppState.currentUser || DOMElements.summaryFinishedBtn.classList.contains('btn-disabled')) return;
-            const memberDocRef = doc(db, "rooms", AppState.currentRoomId, "members", AppState.currentUser.uid);
+            
+            showLoader();
             try {
+                const memberDocRef = doc(db, "rooms", AppState.currentRoomId, "members", AppState.currentUser.uid);
                 const memberDoc = await getDoc(memberDocRef);
                 if (memberDoc.exists() && !memberDoc.data().isFinished) {
                     await updateDoc(memberDocRef, { isFinished: true });
-                    checkAndTriggerSummary();
+                    checkAndTriggerSummary(); // This is async but has its own UI feedback (thinking bubble)
                 }
-            } catch (error) { console.error("更新完成状态失败: ", error); }
+            } catch (error) { 
+                console.error("更新完成状态失败: ", error); 
+            } finally {
+                hideLoader();
+            }
         });
 
         DOMElements.chatMessages.addEventListener('contextmenu', e => { e.preventDefault(); const tb = e.target.closest('.chat-bubble'); if (tb) showContextMenu(tb, e); });
@@ -1798,7 +1931,7 @@
         DOMElements.saveSettingsBtn.addEventListener('click', async (e) => {
             const btn = e.target;
             btn.disabled = true;
-            btn.textContent = '正在验证...';
+            showLoader();
 
             const geminiInput = DOMElements.geminiApiInput;
             const dzmmInput = DOMElements.dzmmApiInput;
@@ -1809,37 +1942,43 @@
             const newGeminiKey = geminiInput.value.trim();
             const newDzmmKey = dzmmInput.value.trim();
             
-            let [geminiOk, dzmmOk] = [true, true];
-            if (newGeminiKey && newGeminiKey !== AppState.geminiApiKey) {
-                geminiOk = await verifyGeminiApiKey(newGeminiKey);
-                if (!geminiOk) geminiInput.classList.add('error');
-            }
-            if (newDzmmKey && newDzmmKey !== AppState.dzmmApiKey) {
-                dzmmOk = await verifyDzmmApiKey(newDzmmKey);
-                if (!dzmmOk) dzmmInput.classList.add('error');
-            }
+            try {
+                let [geminiOk, dzmmOk] = [true, true];
+                if (newGeminiKey && newGeminiKey !== AppState.geminiApiKey) {
+                    geminiOk = await verifyGeminiApiKey(newGeminiKey);
+                    if (!geminiOk) geminiInput.classList.add('error');
+                }
+                if (newDzmmKey && newDzmmKey !== AppState.dzmmApiKey) {
+                    dzmmOk = await verifyDzmmApiKey(newDzmmKey);
+                    if (!dzmmOk) dzmmInput.classList.add('error');
+                }
 
-            if (geminiOk && dzmmOk) {
-                localStorage.setItem('chatPartyUsername', newUsername);
-                AppState.username = newUsername || `用户_${AppState.currentUser.uid.slice(-4)}`;
-                localStorage.setItem('chatPartyGeminiKey', newGeminiKey);
-                AppState.geminiApiKey = newGeminiKey;
-                localStorage.setItem('chatPartyDzmmKey', newDzmmKey);
-                AppState.dzmmApiKey = newDzmmKey;
-                updateApiReminder();
-                DOMElements.apiStatus.textContent = "保存成功！";
-                DOMElements.apiStatus.style.color = 'green';
-                setTimeout(() => {
-                    hideModal('settingsModal');
-                    DOMElements.apiStatus.textContent = "API Key 将在保存时进行验证。";
-                    DOMElements.apiStatus.style.color = '';
-                }, 1000);
-            } else {
-                DOMElements.apiStatus.textContent = "API Key 验证失败，请检查后重试。";
+                if (geminiOk && dzmmOk) {
+                    localStorage.setItem('chatPartyUsername', newUsername);
+                    AppState.username = newUsername || `用户_${AppState.currentUser.uid.slice(-4)}`;
+                    localStorage.setItem('chatPartyGeminiKey', newGeminiKey);
+                    AppState.geminiApiKey = newGeminiKey;
+                    localStorage.setItem('chatPartyDzmmKey', newDzmmKey);
+                    AppState.dzmmApiKey = newDzmmKey;
+                    updateApiReminder();
+                    DOMElements.apiStatus.textContent = "保存成功！";
+                    DOMElements.apiStatus.style.color = 'green';
+                    setTimeout(() => {
+                        hideModal('settingsModal');
+                        DOMElements.apiStatus.textContent = "API Key 将在保存时进行验证。";
+                        DOMElements.apiStatus.style.color = '';
+                    }, 1000);
+                } else {
+                    DOMElements.apiStatus.textContent = "API Key 验证失败，请检查后重试。";
+                    DOMElements.apiStatus.style.color = 'red';
+                }
+            } catch (error) {
+                DOMElements.apiStatus.textContent = "验证时出错，请稍后重试。";
                 DOMElements.apiStatus.style.color = 'red';
+            } finally {
+                btn.disabled = false;
+                hideLoader();
             }
-            btn.disabled = false;
-            btn.textContent = '保存设置';
         });
 
         DOMElements.membersBtn.addEventListener('click', () => {
@@ -1867,10 +2006,10 @@
         DOMElements.closeMembersBtn.addEventListener('click', () => { if (AppState.unsubscribeMembersListener) AppState.unsubscribeMembersListener(); hideModal('membersModal'); });
 
         DOMElements.cancelPasswordBtn.addEventListener('click', () => hideModal('passwordModal'));
-        DOMElements.confirmPasswordBtn.addEventListener('click', () => {
+        DOMElements.confirmPasswordBtn.addEventListener('click', async () => {
             if (AppState.selectedPrivateRoom && DOMElements.passwordInput.value === AppState.selectedPrivateRoom.password) {
                 hideModal('passwordModal');
-                joinRoom(AppState.selectedPrivateRoom.id);
+                await joinRoom(AppState.selectedPrivateRoom.id); // joinRoom has its own loader
                 DOMElements.passwordInput.value = '';
             } else {
                 alert("密码错误！");
@@ -1889,12 +2028,6 @@
 
 </body>
 </html>
-
-
-
-
-
-
 
 
 
