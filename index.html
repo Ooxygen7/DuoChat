@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SnowChat</title>
+    <title>SnowChat 为你所想</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -63,6 +63,13 @@
         .btn-orange:hover:not(:disabled) {
             background-color: #F59B51;
         }
+        .btn-blue {
+            background-color: #87CEEB; /* 天蓝色 */
+            color: white;
+        }
+        .btn-blue:hover:not(:disabled) {
+            background-color: #76BEDA;
+        }
         .btn-disabled {
             background-color: #BDBDBD;
             color: #757575;
@@ -81,6 +88,10 @@
         .input-field:focus {
             border-color: #F7A868;
             box-shadow: 0 0 0 3px rgba(247, 168, 104, 0.4);
+        }
+        .input-field:disabled {
+            background-color: #f3f4f6;
+            cursor: not-allowed;
         }
         .input-field.error {
              border-color: #EF4444;
@@ -203,47 +214,36 @@
         #message-context-menu button:hover { background-color: #f3f4f6; }
 
         /* --- Tab样式 --- */
-        .tab-btn-active { color: #854d0e; border-bottom: 4px solid #d97706; }
-        .tab-btn-inactive { color: #6b7280; border-bottom: 4px solid transparent; }
+        .tab-btn {
+            transition: all 0.2s;
+            padding-bottom: 0.5rem;
+            border-bottom-width: 4px;
+        }
+        .tab-btn-active {
+            color: #854d0e; /* dark amber */
+            border-color: #d97706; /* amber-600 */
+        }
+        .tab-btn-inactive {
+            color: #6b7280; /* gray-500 */
+            border-color: transparent;
+        }
+        .tab-btn:hover {
+            color: #a16207; /* amber-700 */
+        }
+
 
         /* --- 手机端缩小样式 --- */
         @media (max-width: 768px) {
-            /* 将根字体大小缩小到80%，影响所有rem单位 */
-            :root {
-                font-size: 12.8px; /* 16px * 0.8 = 12.8px */
-            }
-
-            /* 手动调整不使用rem的单位 */
-            .wood-panel {
-                border-width: 6px; /* 8px -> 6px */
-            }
-            .btn {
-                 border-bottom-width: 3px; /* 4px -> 3px */
-            }
-            .btn:hover:not(:disabled) {
-                transform: translateY(-2px) scale(1.03); /* -3px -> -2px */
-            }
-            .btn:active:not(:disabled) {
-                transform: translateY(1px) scale(0.98); /* 2px -> 1px */
-                border-bottom-width: 2px; /* 2px -> 保持最低2px */
-            }
-            .input-field:focus, .input-field.error {
-                box-shadow: 0 0 0 2px rgba(247, 168, 104, 0.4); /* 3px -> 2px */
-            }
-            .input-field.error {
-                 box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.4); /* 3px -> 2px */
-            }
-            .text-content blockquote, .reply-quote {
-                border-left-width: 3px; /* 4px -> 3px */
-            }
-            .tab-btn-active, .tab-btn-inactive {
-                border-bottom-width: 3px; /* 4px -> 3px */
-            }
-
-            /* 聊天界面高度调整，防止视窗过小被裁切 */
-            #chat-screen {
-                height: 95vh;
-            }
+            :root { font-size: 12.8px; }
+            .wood-panel { border-width: 6px; }
+            .btn { border-bottom-width: 3px; }
+            .btn:hover:not(:disabled) { transform: translateY(-2px) scale(1.03); }
+            .btn:active:not(:disabled) { transform: translateY(1px) scale(0.98); border-bottom-width: 2px; }
+            .input-field:focus, .input-field.error { box-shadow: 0 0 0 2px rgba(247, 168, 104, 0.4); }
+            .input-field.error { box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.4); }
+            .text-content blockquote, .reply-quote { border-left-width: 3px; }
+            .tab-btn { border-bottom-width: 3px; }
+            #chat-screen { height: 95vh; }
         }
     </style>
 </head>
@@ -251,16 +251,20 @@
     <div class="grass-bg"></div>
 
     <!-- 所有界面容器 -->
-    <div id="main-menu" class="w-full max-w-md mx-auto text-center z-10"><!-- 主菜单 --></div>
-    <div id="create-room-screen" class="hidden w-full max-w-md mx-auto z-10"><!-- 创建房间 --></div>
-    <div id="ai-settings-screen" class="hidden w-full max-w-lg mx-auto z-10"><!-- AI规则 --></div>
-    <div id="join-room-screen" class="hidden w-full max-w-lg mx-auto z-10"><!-- 加入房间 --></div>
-    <div id="chat-screen" class="hidden w-full max-w-2xl mx-auto z-10 h-[90vh]"><!-- 聊天 --></div>
+    <div id="main-menu" class="w-full max-w-md mx-auto text-center z-10"></div>
+    <div id="create-room-screen" class="hidden w-full max-w-md mx-auto z-10"></div>
+    <div id="ai-settings-screen" class="hidden w-full max-w-lg mx-auto z-10"></div>
+    <div id="rule-workshop-screen" class="hidden w-full max-w-2xl mx-auto z-10"></div>
+    <div id="rule-editor-screen" class="hidden w-full max-w-lg mx-auto z-10"></div>
+    <div id="join-room-screen" class="hidden w-full max-w-lg mx-auto z-10"></div>
+    <div id="chat-screen" class="hidden w-full max-w-2xl mx-auto z-10 h-[90vh]"></div>
     
     <!-- 弹窗 -->
-    <div id="settings-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><!-- 设置 --></div>
-    <div id="password-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><!-- 密码 --></div>
-    <div id="members-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><!-- 成员 --></div>
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"></div>
+    <div id="password-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"></div>
+    <div id="members-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"></div>
+    <div id="save-rule-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"></div>
+    <div id="select-rule-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"></div>
     
     <!-- 消息上下文菜单 -->
     <div id="message-context-menu" class="hidden"></div>
@@ -278,7 +282,7 @@
     // --- Firebase SDKs ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
     import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, setDoc, getDoc, deleteDoc, updateDoc, increment, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, setDoc, getDoc, deleteDoc, updateDoc, increment, getDocs, writeBatch, where } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
     
     // --- Firebase 初始化 ---
     const firebaseConfig = {
@@ -294,7 +298,7 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
 
-    // --- 模板 (无需更改) ---
+    // --- 模板 ---
     const templates = {
         mainMenu: `
             <div class="wood-panel p-6 md:p-8">
@@ -306,6 +310,7 @@
                 <div class="mt-8 flex flex-col space-y-4">
                     <button id="show-create-room-btn" class="btn btn-green text-lg">创建房间</button>
                     <button id="show-join-room-btn" class="btn btn-orange text-lg">加入房间</button>
+                    <button id="show-rule-workshop-btn" class="btn btn-blue text-lg">规则工坊</button>
                 </div>
             </div>`,
         createRoomScreen: `
@@ -348,17 +353,103 @@
             <div class="wood-panel p-6 md:p-8 relative h-[80vh] flex flex-col">
                 <button id="back-to-create-from-ai-settings" class="absolute top-4 left-4 w-10 h-10 bg-red-400 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-500 transition"><i class="fas fa-arrow-left"></i></button>
                 <h2 class="text-2xl font-bold text-center text-amber-800">设置AI角色扮演规则</h2>
-                <div class="flex-shrink-0 mt-4 border-b-2 border-amber-300">
-                    <nav class="flex -mb-0.5"><button id="manual-tab" class="px-4 py-2 font-bold tab-btn-active">手动输入</button><button id="json-tab" class="px-4 py-2 font-bold tab-btn-inactive">导入JSON</button></nav>
+                
+                <!-- Saved Rules Button - Moved outside the overflow container -->
+                <div class="flex-shrink-0 mt-4 mb-4">
+                    <button id="show-select-rule-modal-btn" class="w-full btn btn-blue">使用已存规则</button>
                 </div>
-                <div class="flex-grow mt-4 flex flex-col overflow-hidden">
-                    <div id="manual-input-view" class="h-full flex flex-col"><textarea id="ai-rules-textarea" class="input-field w-full flex-grow resize-none" placeholder="此处留空将使用默认AI设定..."></textarea></div>
-                    <div id="json-import-view" class="hidden h-full flex-grow flex flex-col items-center justify-center">
-                        <label for="json-file-input" class="btn btn-orange cursor-pointer"><i class="fas fa-upload mr-2"></i> 选择JSON文件</label>
-                        <input type="file" id="json-file-input" class="hidden" accept=".json"><p id="json-file-name" class="mt-2 text-sm text-gray-500">未选择文件</p>
+
+                <div class="flex-grow flex flex-col overflow-hidden">
+                    <div class="h-full flex flex-col space-y-4 overflow-y-auto no-scrollbar pr-2 ai-editor-container">
+                        <!-- Opening Scene Section -->
+                        <div>
+                            <h3 class="text-lg font-bold text-amber-700">开场白</h3>
+                            <p class="text-xs text-gray-500 mb-2">进入房间后AI自动发送的第一条消息，会进入上下文。</p>
+                            <textarea id="opening-scene-textarea" class="input-field w-full resize-y h-24" placeholder="输入AI的开场白...（选填）"></textarea>
+                        </div>
+
+                        <!-- Character Description Section -->
+                        <div>
+                            <h3 class="text-lg font-bold text-amber-700">角色描述</h3>
+                            <p class="text-xs text-gray-500 mb-2">这部分内容将始终固定在AI上下文的顶部。</p>
+                            <textarea id="char-desc-textarea" class="input-field w-full resize-y h-24" placeholder="输入角色的核心描述..."></textarea>
+                        </div>
+
+                        <!-- World Book Section -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="text-lg font-bold text-amber-700">世界书</h3>
+                                <button class="add-world-book-btn btn btn-green !py-1 !px-3 text-sm"><i class="fas fa-plus mr-1"></i> 添加条目</button>
+                            </div>
+                            <p class="text-xs text-gray-500 mb-2">用于定义世界观、角色关系、特定事件等。可以设置为常驻或关键词触发。</p>
+                            <div class="world-book-entries space-y-3"></div>
+                        </div>
                     </div>
                 </div>
+                
                 <button id="confirm-ai-settings-btn" class="w-full btn btn-green mt-4 text-lg flex-shrink-0">确认并进入房间</button>
+            </div>`,
+        ruleWorkshopScreen: `
+            <div class="wood-panel p-6 md:p-8 relative h-[85vh] flex flex-col">
+                <button id="back-to-main-from-workshop" class="absolute top-4 left-4 w-10 h-10 bg-red-400 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-500 transition"><i class="fas fa-arrow-left"></i></button>
+                <h2 class="text-2xl font-bold text-center text-amber-800">规则工坊</h2>
+                
+                <div class="flex-shrink-0 mt-4 flex justify-center space-x-4">
+                    <button id="show-rule-editor-btn" class="btn btn-green"><i class="fas fa-edit mr-2"></i>打开规则编辑器</button>
+                </div>
+
+                <div class="mt-4 border-b-4 border-amber-200 flex space-x-4">
+                    <button id="workshop-tab-btn" class="tab-btn font-bold text-lg">创意工坊</button>
+                    <button id="my-rules-tab-btn" class="tab-btn font-bold text-lg">我的规则</button>
+                </div>
+
+                <div id="workshop-view" class="mt-4 flex-grow overflow-y-auto no-scrollbar space-y-3 pr-2"></div>
+                
+                <div id="my-rules-view" class="hidden mt-4 flex-grow overflow-y-auto no-scrollbar pr-2">
+                    <div>
+                        <h3 class="text-lg font-bold text-amber-700 border-l-4 border-amber-500 pl-2">我创建的</h3>
+                        <div id="my-created-rules-list" class="mt-2 space-y-3"></div>
+                    </div>
+                    <div class="mt-6">
+                        <h3 class="text-lg font-bold text-amber-700 border-l-4 border-green-500 pl-2">我下载的</h3>
+                        <div id="my-downloaded-rules-list" class="mt-2 space-y-3"></div>
+                    </div>
+                </div>
+            </div>`,
+        ruleEditorScreen: `
+             <div class="wood-panel p-6 md:p-8 relative h-[80vh] flex flex-col">
+                <button id="back-to-workshop-from-editor" class="absolute top-4 left-4 w-10 h-10 bg-red-400 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-500 transition"><i class="fas fa-arrow-left"></i></button>
+                <h2 class="text-2xl font-bold text-center text-amber-800">规则编辑器</h2>
+                
+                <div class="flex-grow mt-4 flex flex-col overflow-hidden">
+                     <div class="h-full flex flex-col space-y-4 overflow-y-auto no-scrollbar pr-2 ai-editor-container">
+                        <!-- Opening Scene Section -->
+                        <div>
+                            <h3 class="text-lg font-bold text-amber-700">开场白</h3>
+                            <p class="text-xs text-gray-500 mb-2">进入房间后AI自动发送的第一条消息，会进入上下文。</p>
+                            <textarea class="input-field w-full resize-y h-24 opening-scene-textarea" placeholder="输入AI的开场白...（选填）"></textarea>
+                        </div>
+
+                        <!-- Character Description Section -->
+                        <div>
+                            <h3 class="text-lg font-bold text-amber-700">角色描述</h3>
+                            <p class="text-xs text-gray-500 mb-2">这部分内容将始终固定在AI上下文的顶部。</p>
+                            <textarea class="input-field w-full resize-y h-24 char-desc-textarea" placeholder="输入角色的核心描述..."></textarea>
+                        </div>
+
+                        <!-- World Book Section -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="text-lg font-bold text-amber-700">世界书</h3>
+                                <button class="add-world-book-btn btn btn-green !py-1 !px-3 text-sm"><i class="fas fa-plus mr-1"></i> 添加条目</button>
+                            </div>
+                            <p class="text-xs text-gray-500 mb-2">用于定义世界观、角色关系、特定事件等。可以设置为常驻或关键词触发。</p>
+                            <div class="world-book-entries space-y-3"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="save-rule-btn" class="w-full btn btn-blue mt-4 text-lg flex-shrink-0">命名并保存</button>
             </div>`,
         joinRoomScreen: `
             <div class="wood-panel p-6 md:p-8 relative h-[80vh] flex flex-col">
@@ -422,6 +513,37 @@
                 <h2 class="text-2xl font-bold text-center text-amber-800">房间成员</h2>
                 <div id="members-list" class="mt-4 space-y-3 max-h-64 overflow-y-auto no-scrollbar"></div>
             </div>`,
+        saveRuleModal: `
+            <div class="wood-panel p-6 md:p-8 relative w-full max-w-sm text-center">
+                 <h3 class="text-xl font-bold text-amber-800">保存规则</h3>
+                 <div class="mt-4 space-y-3 text-left">
+                    <div>
+                        <label class="font-bold">规则名称 (1-8字)</label>
+                        <input type="text" id="rule-name-input" maxlength="8" class="input-field" placeholder="我的规则">
+                    </div>
+                     <div>
+                        <label class="font-bold">规则介绍 (可选)</label>
+                        <textarea id="rule-desc-input" class="input-field resize-y h-20" placeholder="简单介绍一下这个规则..."></textarea>
+                    </div>
+                    <div class="mt-2">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="rule-encrypt-checkbox" class="h-5 w-5 rounded border-gray-300 text-blue-500 focus:ring-blue-400">
+                            <span class="font-bold text-sm">开启规则加密</span>
+                        </label>
+                        <p class="text-xs text-gray-500 mt-1">勾选后，其他玩家使用此规则时，将无法看到角色描述和世界书的具体内容。</p>
+                    </div>
+                 </div>
+                 <div class="mt-6 flex space-x-4">
+                    <button id="cancel-save-rule-btn" class="flex-1 btn bg-gray-400 text-white hover:bg-gray-500">取消</button>
+                    <button id="confirm-save-rule-btn" class="flex-1 btn btn-blue">确认保存</button>
+                </div>
+            </div>`,
+        selectRuleModal: `
+            <div class="wood-panel p-6 md:p-8 relative w-full max-w-lg h-[70vh] flex flex-col">
+                <button id="close-select-rule-btn" class="absolute top-4 right-4 w-10 h-10 bg-red-400 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-500 transition"><i class="fas fa-times"></i></button>
+                <h2 class="text-2xl font-bold text-center text-amber-800">选择一个规则套用</h2>
+                <div id="modal-rules-list" class="mt-4 flex-grow overflow-y-auto space-y-2 no-scrollbar pr-2"></div>
+            </div>`,
         messageContextMenu: `
             <button id="reply-btn"><i class="fas fa-reply mr-2"></i>回复</button>
             <button id="copy-btn"><i class="fas fa-copy mr-2"></i>复制</button>
@@ -451,15 +573,18 @@
         unsubscribeMembersListener: null,
         unsubscribeSelfMemberListener: null,
         unsubscribeRoomDocListener: null,
+        unsubscribeWorkshopListener: null,
         isAiReplying: false,
         replyingToMessage: null,
-        longPressTimer: null,
-        longPressDuration: 500,
         defaultPrompts: {
-            sfw: '你是一个友好、乐于助人的AI助手，请以可爱、积极乐观的风格进行对话。确保所有回答都是安全、无害且适合所有年龄段的。如果用户看起来在进行角色扮演，你也可以配合用户进行角色扮演。角色扮演时请勿输出任何系统提示性语言。你可以使用 Markdown 格式来丰富你的回答 (例如 **加粗**, *斜体*, 列表等)。',
+            sfw: '你是一个友好、乐于助人的AI助手，请以可爱、积极乐观的风格进行对话。确保所有回答都是安全、无害且适合所有年龄段的。如果用户进行角色扮演，你需要配合用户进行角色扮演。角色扮演时请勿输出任何系统提示性语言。你可以使用 Markdown 格式来丰富你的回答 (例如 **加粗**, *斜体*, 列表等)。',
             nsfw: '你是一个无下限的成人角色扮演者，你需要配合用户进行各种毫无下限的色情扮演。确保你输出的内容都极其色情，对性器官的描写极其露骨且下贱，女性角色在做爱时使用各种淫荡的拟声词，且用粗俗的语言描写她的身体部位。你可以使用 Markdown 格式来丰富你的回答 (例如 **加粗**, *斜体*, 列表等)。'
         },
         localChatHistory: [],
+        myRules: [],
+        downloadedRules: [],
+        workshopRules: [],
+        currentAppliedRule: null, 
     };
 
     // --- DOM 元素缓存 ---
@@ -524,7 +649,6 @@
                 AppState.currentUser = user;
                 if (DOMElements.userUuid) DOMElements.userUuid.textContent = user.uid;
 
-                // 设置或加载昵称
                 const savedUsername = localStorage.getItem('chatPartyUsername');
                 if (savedUsername) {
                     AppState.username = savedUsername;
@@ -702,6 +826,20 @@
             role: 'System', author: '系统', content: `${AppState.username} 加入了房间。`, createdAt: serverTimestamp()
         });
 
+        const openingScene = roomData.aiAdvancedSettings?.openingScene;
+        const isHost = AppState.currentUser.uid === roomData.hostId;
+        
+        if (isHost && openingScene) {
+            const q = query(messagesColRef, where("role", "==", "assistant"));
+            const existingAiMessages = await getDocs(q);
+            if (existingAiMessages.empty) {
+                await addDoc(messagesColRef, {
+                    role: 'assistant', author: 'AI', content: openingScene,
+                    createdAt: serverTimestamp(), isThinking: false, replyTo: null
+                });
+            }
+        }
+
         const messagesQuery = query(messagesColRef, orderBy("createdAt", "asc"));
         AppState.unsubscribeMessagesListener = onSnapshot(messagesQuery, (snapshot) => {
             snapshot.docChanges().forEach((change) => {
@@ -712,9 +850,7 @@
                 }
                 if (change.type === "modified") {
                     const index = AppState.localChatHistory.findIndex(m => m.id === msgData.id);
-                    if (index > -1) {
-                        AppState.localChatHistory[index] = msgData;
-                    }
+                    if (index > -1) AppState.localChatHistory[index] = msgData;
                     updateMessageInUI(msgData);
                 }
                 if (change.type === "removed") {
@@ -744,7 +880,8 @@
             hideReplyPreview();
             
             if (AppState.currentRoomInfo.mode === 'free') {
-                triggerAIResponse({ id: newDocRef.id, ...messagePayload });
+                const fullMessage = { id: newDocRef.id, ...messagePayload };
+                triggerAIResponse(fullMessage);
             }
         } catch (error) {
             console.error("发送消息失败: ", error);
@@ -755,12 +892,8 @@
         const screenToShow = DOMElements.screens[screenKey];
         const screenToHide = Object.values(DOMElements.screens).find(s => s && !s.classList.contains('hidden'));
         
-        // 根据屏幕切换显示/隐藏设置按钮
-        if (screenKey === 'chatScreen') {
-            DOMElements.settingsBtn.classList.add('hidden');
-        } else {
-            DOMElements.settingsBtn.classList.remove('hidden');
-        }
+        if (screenKey === 'chatScreen') DOMElements.settingsBtn.classList.add('hidden');
+        else DOMElements.settingsBtn.classList.remove('hidden');
 
         if (screenToHide && screenToHide !== screenToShow) {
             screenToHide.classList.add('animate-leave');
@@ -770,17 +903,13 @@
                 if (screenToShow) {
                     screenToShow.classList.remove('hidden');
                     screenToShow.classList.add('animate-enter');
-                    screenToShow.addEventListener('animationend', () => {
-                        screenToShow.classList.remove('animate-enter');
-                    }, { once: true });
+                    screenToShow.addEventListener('animationend', () => screenToShow.classList.remove('animate-enter'), { once: true });
                 }
             }, { once: true });
         } else if (!screenToHide && screenToShow) {
              screenToShow.classList.remove('hidden');
              screenToShow.classList.add('animate-enter');
-             screenToShow.addEventListener('animationend', () => {
-                screenToShow.classList.remove('animate-enter');
-            }, { once: true });
+             screenToShow.addEventListener('animationend', () => screenToShow.classList.remove('animate-enter'), { once: true });
         }
     }
 
@@ -813,9 +942,7 @@
                 body: JSON.stringify({ contents: [{ parts: [{ text: "hello" }] }] })
             });
             return response.ok;
-        } catch (error) {
-            return false;
-        }
+        } catch (error) { return false; }
     }
 
     async function verifyDzmmApiKey(key) {
@@ -828,9 +955,7 @@
                 body: JSON.stringify({ model: 'nalang-max-7-32K', messages: [{role: "user", content: "hello"}], stream: false })
             });
              return response.ok;
-        } catch(error) {
-            return false;
-        }
+        } catch(error) { return false; }
     }
     
     // --- Member Status Management ---
@@ -840,9 +965,7 @@
             const batch = writeBatch(db);
             const membersQuery = query(collection(db, "rooms", AppState.currentRoomId, "members"));
             const membersSnapshot = await getDocs(membersQuery);
-            membersSnapshot.forEach(memberDoc => {
-                batch.update(memberDoc.ref, { isFinished: false });
-            });
+            membersSnapshot.forEach(memberDoc => batch.update(memberDoc.ref, { isFinished: false }));
             await batch.commit();
         } catch (error) {
             console.error("重置成员状态失败:", error);
@@ -851,12 +974,11 @@
 
 
     // --- AI API 调用 ---
-    async function callGeminiAPI(history, systemPrompt, isSummary) {
+    async function callGeminiAPI(history, systemPrompt) {
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${AppState.geminiApiKey}`;
         const contents = history.map(msg => ({
             role: msg.role === 'assistant' ? 'model' : 'user', parts: [{ text: `${msg.author}: ${msg.content}` }]
         }));
-
         const response = await fetch(apiUrl, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents, systemInstruction: { parts: [{ text: systemPrompt }] } })
@@ -869,18 +991,16 @@
         return result.candidates[0].content.parts[0].text;
     }
 
-    async function callDzmmAPI(history, systemPrompt, thinkingDocId, isSummary) {
+    async function callDzmmAPI(history, systemPrompt, thinkingDocId) {
         const apiUrl = 'https://www.gpt4novel.com/api/xiaoshuoai/ext/v1/chat/completions';
         const messages = [{ role: 'system', content: systemPrompt }, ...history.map(msg => ({ 
-            role: msg.role, content: `${msg.author}: ${msg.content}`
+            role: msg.role, content: msg.content
         }))];
-
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AppState.dzmmApiKey}` },
             body: JSON.stringify({ model: 'nalang-max-7-32K', messages, stream: true })
         });
-
         if (!response.ok) throw new Error(`DZMM API 错误! Status: ${response.status}`);
         
         const reader = response.body.getReader();
@@ -911,11 +1031,72 @@
                 }
             }
         }
-
         await updateDoc(thinkingDocRef, { content: fullResponse, isThinking: false });
         return fullResponse;
     }
     
+    function applyWorldBook(baseHistory, worldBookEntries, lastUserMessage, isSummary = false) {
+        let newHistory = JSON.parse(JSON.stringify(baseHistory));
+        const groupedByDepth = {};
+
+        // Determine the content to scan for keywords based on the mode
+        let contentToScan = '';
+        if (isSummary) {
+            contentToScan = baseHistory
+                .filter(msg => msg.role === 'user' && msg.author !== 'System')
+                .map(msg => msg.content.toLowerCase())
+                .join('\n');
+        } else if (lastUserMessage) {
+            contentToScan = lastUserMessage.content?.toLowerCase() || '';
+        }
+
+        // Populate groupedByDepth based on triggers (always active or keyword-based)
+        for (const entry of worldBookEntries) {
+            if (!entry.prompt) continue;
+            const isAlways = entry.type === 'always';
+            const isTriggered = entry.type === 'triggered' && entry.keywords.some(k => k && contentToScan.includes(k.toLowerCase()));
+            if (isAlways || isTriggered) {
+                if (!groupedByDepth[entry.depth]) groupedByDepth[entry.depth] = [];
+                groupedByDepth[entry.depth].push(entry.prompt);
+            }
+        }
+
+        // Handle depth 0 entries
+        if (groupedByDepth[0]?.length > 0) {
+            if (!isSummary && lastUserMessage) {
+                // In free mode, append to the last user message
+                const lastUserMsgIndex = newHistory.map(m => m.id).lastIndexOf(lastUserMessage.id);
+                if (lastUserMsgIndex !== -1) {
+                    newHistory[lastUserMsgIndex].content += `\n[附加说明：${groupedByDepth[0].join('\n')}]`;
+                }
+            } else if (isSummary) {
+                // In summary mode, inject as a separate system instruction before the final summary prompt
+                const worldBookMessage = {
+                    role: 'user', content: `[附加说明：${groupedByDepth[0].join('\n')}]`,
+                    author: 'System', id: `wb-0-${crypto.randomUUID()}`
+                };
+                newHistory.push(worldBookMessage);
+            }
+        }
+        
+        // Handle depth > 0 entries (insert after specific AI replies)
+        const aiReplyIndices = newHistory.map((msg, i) => (msg.role === 'assistant' ? i : -1)).filter(i => i !== -1);
+        const depthKeys = Object.keys(groupedByDepth).map(Number).filter(d => d > 0).sort((a, b) => b - a);
+        for (const depth of depthKeys) {
+            const targetAiReplyIndexInMap = aiReplyIndices.length - depth;
+            if (targetAiReplyIndexInMap >= 0) {
+                const insertionIndex = aiReplyIndices[targetAiReplyIndexInMap] + 1;
+                const worldBookMessage = {
+                    role: 'user', content: `[场景说明：${groupedByDepth[depth].join('\n')}]`,
+                    author: 'System', id: `wb-${depth}-${crypto.randomUUID()}`
+                };
+                newHistory.splice(insertionIndex, 0, worldBookMessage);
+            }
+        }
+
+        return newHistory;
+    }
+
     async function triggerAIResponse(lastUserMessage, isSummary = false) {
         if (!AppState.currentRoomId) return;
 
@@ -936,7 +1117,7 @@
         }
 
         AppState.isAiReplying = true;
-        DOMElements.sendMessageBtn.disabled = true;
+        if(DOMElements.sendMessageBtn) DOMElements.sendMessageBtn.disabled = true;
         let thinkingDocId = null;
 
         try {
@@ -947,44 +1128,63 @@
             });
             thinkingDocId = thinkingDocRef.id;
 
-            const defaultPrompt = AppState.defaultPrompts[roomRating];
-            const userRules = AppState.currentRoomInfo.aiRules;
+            let systemPrompt = '';
+            let historyForAPI = AppState.localChatHistory.filter(msg => (msg.role === 'user' || msg.role === 'assistant') && msg.id !== thinkingDocId);
+            const settings = AppState.currentRoomInfo.aiAdvancedSettings;
+
+            if (settings) {
+                const hasCharDesc = settings.characterDescription?.trim();
+                const hasWorldBook = settings.worldBook && settings.worldBook.length > 0;
+                
+                if (hasCharDesc || hasWorldBook) {
+                    systemPrompt = hasCharDesc ? settings.characterDescription : '';
+                } else {
+                    systemPrompt = AppState.defaultPrompts[roomRating];
+                }
+
+                if (hasWorldBook) {
+                    // Pass the isSummary flag to handle world book logic correctly
+                    historyForAPI = applyWorldBook(historyForAPI, settings.worldBook, lastUserMessage, isSummary); 
+                }
+            } else {
+                systemPrompt = AppState.defaultPrompts[roomRating];
+            }
+
+            const finalHistoryForAPI = historyForAPI.map(msg => ({ 
+                role: msg.role, 
+                content: msg.author === 'System' ? msg.content : `${msg.author}: ${msg.content}`
+            }));
             
-            let systemPrompt = defaultPrompt;
-            if (userRules) systemPrompt += `\n\n此外，请严格遵守以下扮演规则：\n${userRules}`;
-
-            let historyForAPI = AppState.localChatHistory
-                .filter(msg => msg.role === 'user' && msg.id !== thinkingDocId)
-                .map(msg => ({ role: msg.role, content: msg.content, author: msg.author }));
-
             if (isSummary) {
-                 historyForAPI.push({role: 'user', content: '请根据以上所有人的对话内容，进行一次详细的总结。', author: 'System'});
+                 finalHistoryForAPI.push({role: 'user', content: '请根据以上所有聊天内容进行统一的回复，请勿输出任何系统说明或总结类文本。', author: 'System'});
             }
             
             let responseText = '';
             if (roomRating === 'nsfw') {
-                responseText = await callDzmmAPI(historyForAPI, systemPrompt, thinkingDocId, isSummary);
+                const dzmmHistory = historyForAPI.map(msg => ({
+                    role: msg.role,
+                    // 核心修改：如果是 AI 或系统说的，只发送纯内容；如果是玩家说的，才带上作者前缀
+                    content: (msg.role === 'assistant' || msg.author === 'System') 
+                        ? msg.content 
+                        : `${msg.author}: ${msg.content}`
+                }));
+                responseText = await callDzmmAPI(finalHistoryForAPI, systemPrompt, thinkingDocId);
             } else {
-                responseText = await callGeminiAPI(historyForAPI, systemPrompt, isSummary);
-                const finalDocRef = doc(db, "rooms", AppState.currentRoomId, "messages", thinkingDocId);
-                await updateDoc(finalDocRef, {
-                    content: responseText,
-                    isThinking: false,
+                responseText = await callGeminiAPI(finalHistoryForAPI, systemPrompt);
+                await updateDoc(doc(db, "rooms", AppState.currentRoomId, "messages", thinkingDocId), {
+                    content: responseText, isThinking: false,
                     replyTo: (AppState.currentRoomInfo.mode === 'free' && !isSummary) ? lastUserMessage : null
                 });
             }
             
-            if (isSummary) {
-                await resetAllMembersFinishedStatus();
-            }
+            if (isSummary) await resetAllMembersFinishedStatus();
 
         } catch (error) {
             console.error('AI Error:', error);
             if (thinkingDocId) {
                 await deleteDoc(doc(db, "rooms", AppState.currentRoomId, "messages", thinkingDocId));
             }
-            const messagesColRef = collection(db, "rooms", AppState.currentRoomId, "messages");
-            await addDoc(messagesColRef, {
+            await addDoc(collection(db, "rooms", AppState.currentRoomId, "messages"), {
                 role: 'System', content: `AI出错了: ${error.message}`, author: '系统', createdAt: serverTimestamp()
             });
         } finally {
@@ -1011,9 +1211,7 @@
                 break;
             case 'assistant':
                 bubbleClass = 'chat-bubble-ai';
-                if (isThinking) {
-                    bubbleClass += ' thinking';
-                }
+                if (isThinking) bubbleClass += ' thinking';
                 alignClass = 'justify-start';
                 authorHtml = `<div class="text-xs text-gray-400 mt-1">${author}</div>`;
                 break;
@@ -1023,14 +1221,7 @@
                 return;
         }
 
-        let replyHtml = '';
-        if (replyTo) {
-            replyHtml = `
-                <div class="reply-quote">
-                    <div class="author">${replyTo.author}</div>
-                    <div class="content">${replyTo.content}</div>
-                </div>`;
-        }
+        let replyHtml = replyTo ? `<div class="reply-quote"><div class="author">${replyTo.author}</div><div class="content">${replyTo.content}</div></div>` : '';
         
         messageWrapper.className = `flex ${alignClass}`;
         messageWrapper.innerHTML = `
@@ -1045,8 +1236,7 @@
         const textContentElement = messageWrapper.querySelector('.text-content');
         if (role === 'assistant') {
             const placeholder = isThinking ? 'AI 正在思考' : (content || '');
-            const dirtyHtml = marked.parse(placeholder);
-            textContentElement.innerHTML = DOMPurify.sanitize(dirtyHtml);
+            textContentElement.innerHTML = DOMPurify.sanitize(marked.parse(placeholder));
         } else {
             textContentElement.textContent = content;
         }
@@ -1062,27 +1252,17 @@
         const textContentElement = msgWrapper.querySelector('.text-content');
 
         if (textContentElement) {
-            const dirtyHtml = marked.parse(content || '');
-            textContentElement.innerHTML = DOMPurify.sanitize(dirtyHtml);
+            textContentElement.innerHTML = DOMPurify.sanitize(marked.parse(content || ''));
         }
 
         if (bubble) {
-            if (isThinking) {
-                bubble.classList.add('thinking');
-            } else {
-                bubble.classList.remove('thinking');
-            }
+            bubble.classList.toggle('thinking', isThinking);
             if (replyTo && !bubble.querySelector('.reply-quote')) {
-                 const replyHtml = `
-                    <div class="reply-quote">
-                        <div class="author">${replyTo.author}</div>
-                        <div class="content">${replyTo.content}</div>
-                    </div>`;
+                 const replyHtml = `<div class="reply-quote"><div class="author">${replyTo.author}</div><div class="content">${replyTo.content}</div></div>`;
                 bubble.querySelector('.message-content').insertAdjacentHTML('afterbegin', replyHtml);
             }
         }
     }
-
 
     function showReplyPreview(message) {
         AppState.replyingToMessage = { author: message.author, content: message.content };
@@ -1137,12 +1317,207 @@
         if(allMembers.length < AppState.currentRoomInfo.memberCount) return;
 
         const allFinished = allMembers.every(member => member.isFinished);
-        
-        if (allFinished) {
-            triggerAIResponse(null, true); 
+        if (allFinished) triggerAIResponse(null, true);
+    }
+
+    function createWorldBookEntryHTML(id) {
+        return `
+            <div id="${id}" class="world-book-entry bg-amber-100/50 p-3 rounded-lg border border-amber-200 relative">
+                <button class="delete-world-book-btn absolute top-2 right-2 w-6 h-6 bg-red-300 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-400">&times;</button>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-sm font-bold">关键字 (英文逗号隔开)</label>
+                        <input type="text" class="wb-keywords input-field !py-1 !text-sm" placeholder="e.g. 城堡,国王">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-sm font-bold">模式</label>
+                            <select class="wb-type input-field !py-1 !text-sm w-full">
+                                <option value="triggered">触发</option>
+                                <option value="always">常驻</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-sm font-bold">深度</label>
+                            <input type="number" class="wb-depth input-field !py-1 !text-sm" value="1" min="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <label class="text-sm font-bold">提示词</label>
+                    <textarea class="wb-prompt input-field w-full resize-y h-20 !text-sm" placeholder="当关键字被触发时，插入这段内容..."></textarea>
+                </div>
+            </div>`;
+    }
+
+    // --- Rule Workshop & AI Editor ---
+    function renderSavedRulesList(container, rules) {
+        container.innerHTML = '';
+        if (rules.length === 0) {
+            container.innerHTML = `<p class="text-center text-sm text-gray-500">你还没有任何本地规则。</p>`;
+            return;
         }
+
+        rules.forEach(rule => {
+            const ruleEl = document.createElement('div');
+            ruleEl.className = 'p-3 rounded-lg cursor-pointer hover:bg-amber-200/80 transition bg-amber-100/50 border border-amber-200';
+            ruleEl.dataset.ruleId = rule.id;
+            const lockIcon = rule.isEncrypted ? '<i class="fas fa-lock text-sm text-amber-600 mr-2"></i>' : '';
+            
+            const isMyOwnRule = AppState.myRules.some(myRule => myRule.id === rule.id);
+            const authorInfo = !isMyOwnRule ? `<p class="text-xs text-gray-600 mt-1">作者: ${rule.authorName || '匿名'}</p>` : '';
+
+            ruleEl.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div class="flex-grow mr-2">
+                        <p class="font-bold text-amber-800 flex items-center">${lockIcon}${rule.name}</p>
+                        ${authorInfo}
+                        <p class="text-xs text-gray-500 mt-1">${rule.description || '没有介绍'}</p>
+                    </div>
+                </div>`;
+            container.appendChild(ruleEl);
+        });
+    }
+
+    function loadLocalRules() {
+        AppState.myRules = JSON.parse(localStorage.getItem('snowChatMyRules') || '[]');
+        AppState.downloadedRules = JSON.parse(localStorage.getItem('snowChatDownloadedRules') || '[]');
+    }
+
+    function saveMyRules() {
+        localStorage.setItem('snowChatMyRules', JSON.stringify(AppState.myRules));
     }
     
+    function saveDownloadedRules() {
+        localStorage.setItem('snowChatDownloadedRules', JSON.stringify(AppState.downloadedRules));
+    }
+    
+    function getAiSettingsFromEditor(editorContainer) {
+        const worldBookEntries = [];
+        editorContainer.querySelectorAll('.world-book-entry').forEach(entryEl => {
+            worldBookEntries.push({
+                id: entryEl.id,
+                keywords: entryEl.querySelector('.wb-keywords').value.split(',').map(k => k.trim()).filter(Boolean),
+                type: entryEl.querySelector('.wb-type').value,
+                depth: parseInt(entryEl.querySelector('.wb-depth').value, 10),
+                prompt: entryEl.querySelector('.wb-prompt').value.trim(),
+            });
+        });
+        return {
+            openingScene: editorContainer.querySelector('.opening-scene-textarea, #opening-scene-textarea').value.trim(),
+            characterDescription: editorContainer.querySelector('.char-desc-textarea, #char-desc-textarea').value.trim(),
+            worldBook: worldBookEntries
+        };
+    }
+
+    function resetAiEditor(editorContainer) {
+        const charDesc = editorContainer.querySelector('.char-desc-textarea, #char-desc-textarea');
+        const worldBookEntries = editorContainer.querySelector('.world-book-entries');
+        const addWorldBookBtn = editorContainer.querySelector('.add-world-book-btn');
+        editorContainer.querySelector('.opening-scene-textarea, #opening-scene-textarea').value = '';
+        charDesc.value = '';
+        charDesc.placeholder = '输入角色的核心描述...';
+        charDesc.disabled = false;
+        worldBookEntries.innerHTML = '';
+        if(addWorldBookBtn) addWorldBookBtn.disabled = false;
+    }
+    
+    function populateAiEditor(editorContainer, settings, isEncrypted = false) {
+        resetAiEditor(editorContainer);
+        editorContainer.querySelector('.opening-scene-textarea, #opening-scene-textarea').value = settings.openingScene || '';
+        const charDesc = editorContainer.querySelector('.char-desc-textarea, #char-desc-textarea');
+        const worldBookEntriesContainer = editorContainer.querySelector('.world-book-entries');
+        const addWorldBookBtn = editorContainer.querySelector('.add-world-book-btn');
+        if (isEncrypted) {
+            charDesc.placeholder = '规则已加密，内容不可见';
+            charDesc.disabled = true;
+            worldBookEntriesContainer.innerHTML = `<p class="text-center text-sm text-gray-500 p-4">规则已加密，内容不可见</p>`;
+            if(addWorldBookBtn) addWorldBookBtn.disabled = true;
+        } else {
+            charDesc.value = settings.characterDescription || '';
+            if (settings.worldBook) {
+                settings.worldBook.forEach(entry => {
+                    const entryId = `wb-entry-${crypto.randomUUID()}`;
+                    worldBookEntriesContainer.insertAdjacentHTML('beforeend', createWorldBookEntryHTML(entryId));
+                    const newEntryEl = worldBookEntriesContainer.querySelector(`#${entryId}`);
+                    newEntryEl.querySelector('.wb-keywords').value = entry.keywords.join(',');
+                    newEntryEl.querySelector('.wb-type').value = entry.type;
+                    newEntryEl.querySelector('.wb-depth').value = entry.depth;
+                    newEntryEl.querySelector('.wb-prompt').value = entry.prompt;
+                });
+            }
+        }
+    }
+
+    function renderWorkshopRulesList(container, rules) {
+        container.innerHTML = '';
+        if (rules.length === 0) {
+            container.innerHTML = `<p class="text-center text-sm text-gray-500">工坊里还没有规则，快来上传第一个吧！</p>`;
+            return;
+        }
+        rules.forEach(rule => {
+            const ruleEl = document.createElement('div');
+            ruleEl.className = 'p-3 rounded-lg bg-amber-100/50 border border-amber-200';
+            const lockIcon = rule.isEncrypted ? '<i class="fas fa-lock text-sm text-amber-600 mr-2"></i>' : '';
+            ruleEl.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div class="flex-grow mr-2">
+                        <p class="font-bold text-amber-800 flex items-center">${lockIcon}${rule.name}</p>
+                        <p class="text-xs text-gray-600 mt-1">作者: ${rule.authorName || '匿名'}</p>
+                        <p class="text-xs text-gray-500 mt-1">${rule.description || '没有介绍'}</p>
+                    </div>
+                    <button data-rule-id="${rule.id}" class="download-rule-btn btn btn-green !py-1 !px-3 text-sm"><i class="fas fa-download mr-1"></i>下载</button>
+                </div>`;
+            container.appendChild(ruleEl);
+        });
+    }
+
+    function renderMyRulesLists() {
+        const { myCreatedRulesList, myDownloadedRulesList } = DOMElements;
+        myCreatedRulesList.innerHTML = '';
+        myDownloadedRulesList.innerHTML = '';
+
+        if(AppState.myRules.length === 0) myCreatedRulesList.innerHTML = `<p class="text-center text-sm text-gray-500">你还没有创建任何规则</p>`;
+        else {
+            AppState.myRules.forEach(rule => {
+                const ruleEl = document.createElement('div');
+                ruleEl.className = 'p-3 rounded-lg bg-amber-100/50 border border-amber-200';
+                const lockIcon = rule.isEncrypted ? '<i class="fas fa-lock text-sm text-amber-600 mr-2"></i>' : '';
+                ruleEl.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="flex-grow mr-2">
+                            <p class="font-bold text-amber-800 flex items-center">${lockIcon}${rule.name}</p>
+                            <p class="text-xs text-gray-500 mt-1">${rule.description || '没有介绍'}</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button data-rule-id="${rule.id}" class="upload-rule-btn btn btn-blue !py-1 !px-3 text-sm"><i class="fas fa-upload mr-1"></i>上传</button>
+                            <button data-rule-id="${rule.id}" class="delete-my-rule-btn btn bg-red-400 text-white hover:bg-red-500 !py-1 !px-3 text-sm"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>`;
+                myCreatedRulesList.appendChild(ruleEl);
+            });
+        }
+        
+        if(AppState.downloadedRules.length === 0) myDownloadedRulesList.innerHTML = `<p class="text-center text-sm text-gray-500">你还没有下载任何规则</p>`;
+        else {
+             AppState.downloadedRules.forEach(rule => {
+                const ruleEl = document.createElement('div');
+                ruleEl.className = 'p-3 rounded-lg bg-green-100/50 border border-green-200';
+                const lockIcon = rule.isEncrypted ? '<i class="fas fa-lock text-sm text-green-600 mr-2"></i>' : '';
+                ruleEl.innerHTML = `
+                     <div class="flex justify-between items-start">
+                        <div class="flex-grow mr-2">
+                            <p class="font-bold text-green-800 flex items-center">${lockIcon}${rule.name}</p>
+                            <p class="text-xs text-gray-600 mt-1">作者: ${rule.authorName || '匿名'}</p>
+                            <p class="text-xs text-gray-500 mt-1">${rule.description || '没有介绍'}</p>
+                        </div>
+                        <button data-rule-id="${rule.id}" class="delete-downloaded-rule-btn btn bg-red-400 text-white hover:bg-red-500 !py-1 !px-3 text-sm"><i class="fas fa-trash-alt"></i></button>
+                    </div>`;
+                myDownloadedRulesList.appendChild(ruleEl);
+            });
+        }
+    }
+
     // --- 启动和事件绑定 ---
     document.addEventListener('DOMContentLoaded', () => {
         // 1. 渲染模板
@@ -1154,14 +1529,42 @@
 
         // 2. 缓存DOM元素
         Object.assign(DOMElements, {
-            screens: { mainMenu: document.getElementById('main-menu'), createRoomScreen: document.getElementById('create-room-screen'), aiSettingsScreen: document.getElementById('ai-settings-screen'), joinRoomScreen: document.getElementById('join-room-screen'), chatScreen: document.getElementById('chat-screen') },
-            modals: { settingsModal: document.getElementById('settings-modal'), passwordModal: document.getElementById('password-modal'), membersModal: document.getElementById('members-modal') },
-            messageContextMenu: document.getElementById('message-context-menu'), settingsBtn: document.getElementById('settings-btn'), userUuid: document.getElementById('user-uuid'), showCreateRoomBtn: document.getElementById('show-create-room-btn'), showJoinRoomBtn: document.getElementById('show-join-room-btn'), backToMainFromCreate: document.getElementById('back-to-main-from-create'), confirmCreateRoomBtn: document.getElementById('confirm-create-room-btn'), modeFreeRadio: document.getElementById('mode-free'), modeSummaryRadio: document.getElementById('mode-summary'), modeDescription: document.getElementById('mode-description'), privacyPrivateRadio: document.getElementById('privacy-private'), privacyPublicRadio: document.getElementById('privacy-public'), passwordContainer: document.getElementById('password-container'), playerCountSlider: document.getElementById('player-count'), playerCountDisplay: document.getElementById('player-count-display'), backToCreateFromAiSettings: document.getElementById('back-to-create-from-ai-settings'), confirmAiSettingsBtn: document.getElementById('confirm-ai-settings-btn'), manualTab: document.getElementById('manual-tab'), jsonTab: document.getElementById('json-tab'), manualInputView: document.getElementById('manual-input-view'), jsonImportView: document.getElementById('json-import-view'), jsonFileInput: document.getElementById('json-file-input'), jsonFileName: document.getElementById('json-file-name'), aiRulesTextarea: document.getElementById('ai-rules-textarea'), backToMainFromJoin: document.getElementById('back-to-main-from-join'), roomList: document.getElementById('room-list'), backToMainFromChat: document.getElementById('back-to-main-from-chat'), chatRoomName: document.getElementById('chat-room-name'), membersBtn: document.getElementById('members-btn'), chatMessages: document.getElementById('chat-messages'), replyPreviewContainer: document.getElementById('reply-preview-container'), summaryFinishedBtn: document.getElementById('summary-finished-btn'), chatInput: document.getElementById('chat-input'), sendMessageBtn: document.getElementById('send-message-btn'), closeSettingsBtn: document.getElementById('close-settings-btn'), usernameInput: document.getElementById('username-input'), geminiApiInput: document.getElementById('gemini-api-input'), dzmmApiInput: document.getElementById('dzmm-api-input'), saveSettingsBtn: document.getElementById('save-settings-btn'), passwordRoomName: document.getElementById('password-room-name'), passwordInput: document.getElementById('password-input'), cancelPasswordBtn: document.getElementById('cancel-password-btn'), confirmPasswordBtn: document.getElementById('confirm-password-btn'), closeMembersBtn: document.getElementById('close-members-btn'), membersList: document.getElementById('members-list'), apiStatus: document.getElementById('api-status'),
+            screens: { mainMenu: document.getElementById('main-menu'), createRoomScreen: document.getElementById('create-room-screen'), aiSettingsScreen: document.getElementById('ai-settings-screen'), ruleWorkshopScreen: document.getElementById('rule-workshop-screen'), ruleEditorScreen: document.getElementById('rule-editor-screen'), joinRoomScreen: document.getElementById('join-room-screen'), chatScreen: document.getElementById('chat-screen') },
+            modals: { settingsModal: document.getElementById('settings-modal'), passwordModal: document.getElementById('password-modal'), membersModal: document.getElementById('members-modal'), saveRuleModal: document.getElementById('save-rule-modal'), selectRuleModal: document.getElementById('select-rule-modal') },
+            messageContextMenu: document.getElementById('message-context-menu'), settingsBtn: document.getElementById('settings-btn'), userUuid: document.getElementById('user-uuid'), showCreateRoomBtn: document.getElementById('show-create-room-btn'), showJoinRoomBtn: document.getElementById('show-join-room-btn'), showRuleWorkshopBtn: document.getElementById('show-rule-workshop-btn'), backToMainFromCreate: document.getElementById('back-to-main-from-create'), confirmCreateRoomBtn: document.getElementById('confirm-create-room-btn'), 
+            // Create Room Screen elements
+            roomName: document.getElementById('room-name'),
+            roomPassword: document.getElementById('room-password'),
+            modeFreeRadio: document.getElementById('mode-free'), modeSummaryRadio: document.getElementById('mode-summary'), modeDescription: document.getElementById('mode-description'), privacyPrivateRadio: document.getElementById('privacy-private'), privacyPublicRadio: document.getElementById('privacy-public'), passwordContainer: document.getElementById('password-container'), playerCountSlider: document.getElementById('player-count'), playerCountDisplay: document.getElementById('player-count-display'), 
+            // AI Settings Screen elements
+            backToCreateFromAiSettings: document.getElementById('back-to-create-from-ai-settings'), confirmAiSettingsBtn: document.getElementById('confirm-ai-settings-btn'),
+            showSelectRuleModalBtn: document.getElementById('show-select-rule-modal-btn'),
+            // Workshop Screen
+            backToMainFromWorkshop: document.getElementById('back-to-main-from-workshop'),
+            showRuleEditorBtn: document.getElementById('show-rule-editor-btn'),
+            workshopTabBtn: document.getElementById('workshop-tab-btn'),
+            myRulesTabBtn: document.getElementById('my-rules-tab-btn'),
+            workshopView: document.getElementById('workshop-view'),
+            myRulesView: document.getElementById('my-rules-view'),
+            myCreatedRulesList: document.getElementById('my-created-rules-list'),
+            myDownloadedRulesList: document.getElementById('my-downloaded-rules-list'),
+            // Rule Editor Screen
+            backToWorkshopFromEditor: document.getElementById('back-to-workshop-from-editor'),
+            saveRuleBtn: document.getElementById('save-rule-btn'),
+            // Join Room Screen
+            backToMainFromJoin: document.getElementById('back-to-main-from-join'), roomList: document.getElementById('room-list'),
+            // Chat Screen
+            backToMainFromChat: document.getElementById('back-to-main-from-chat'), chatRoomName: document.getElementById('chat-room-name'), membersBtn: document.getElementById('members-btn'), chatMessages: document.getElementById('chat-messages'), replyPreviewContainer: document.getElementById('reply-preview-container'), summaryFinishedBtn: document.getElementById('summary-finished-btn'), chatInput: document.getElementById('chat-input'), sendMessageBtn: document.getElementById('send-message-btn'),
+            // Modals
+            closeSettingsBtn: document.getElementById('close-settings-btn'), usernameInput: document.getElementById('username-input'), geminiApiInput: document.getElementById('gemini-api-input'), dzmmApiInput: document.getElementById('dzmm-api-input'), saveSettingsBtn: document.getElementById('save-settings-btn'), passwordRoomName: document.getElementById('password-room-name'), passwordInput: document.getElementById('password-input'), cancelPasswordBtn: document.getElementById('cancel-password-btn'), confirmPasswordBtn: document.getElementById('confirm-password-btn'), closeMembersBtn: document.getElementById('close-members-btn'), membersList: document.getElementById('members-list'), apiStatus: document.getElementById('api-status'),
+            cancelSaveRuleBtn: document.getElementById('cancel-save-rule-btn'), confirmSaveRuleBtn: document.getElementById('confirm-save-rule-btn'), ruleNameInput: document.getElementById('rule-name-input'), ruleEncryptCheckbox: document.getElementById('rule-encrypt-checkbox'), ruleDescInput: document.getElementById('rule-desc-input'),
+            closeSelectRuleBtn: document.getElementById('close-select-rule-btn'), modalRulesList: document.getElementById('modal-rules-list'),
             apiReminderBanner: document.getElementById('api-reminder-banner')
         });
 
         // 3. 登录并加载设置
         signInAnonymouslyIfNeeded();
+        loadLocalRules();
         AppState.geminiApiKey = localStorage.getItem('chatPartyGeminiKey') || '';
         AppState.dzmmApiKey = localStorage.getItem('chatPartyDzmmKey') || '';
         DOMElements.geminiApiInput.value = AppState.geminiApiKey;
@@ -1174,81 +1577,200 @@
         DOMElements.backToMainFromCreate.addEventListener('click', () => switchScreen('mainMenu'));
         DOMElements.backToMainFromJoin.addEventListener('click', () => { if (AppState.unsubscribeRoomListener) AppState.unsubscribeRoomListener(); switchScreen('mainMenu'); });
         DOMElements.backToMainFromChat.addEventListener('click', async () => { await leaveRoom(); switchScreen('mainMenu'); });
-        DOMElements.backToCreateFromAiSettings.addEventListener('click', () => switchScreen('createRoomScreen'));
+        DOMElements.backToCreateFromAiSettings.addEventListener('click', () => { AppState.currentAppliedRule = null; switchScreen('createRoomScreen'); });
         
-        DOMElements.manualTab.addEventListener('click', () => {
-            DOMElements.manualTab.classList.replace('tab-btn-inactive', 'tab-btn-active');
-            DOMElements.jsonTab.classList.replace('tab-btn-active', 'tab-btn-inactive');
-            DOMElements.manualInputView.classList.remove('hidden');
-            DOMElements.jsonImportView.classList.add('hidden');
-        });
-
-        DOMElements.jsonTab.addEventListener('click', () => {
-            DOMElements.jsonTab.classList.replace('tab-btn-inactive', 'tab-btn-active');
-            DOMElements.manualTab.classList.replace('tab-btn-active', 'tab-btn-inactive');
-            DOMElements.jsonImportView.classList.remove('hidden');
-            DOMElements.manualInputView.classList.add('hidden');
-        });
-
-        DOMElements.jsonFileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) {
-                DOMElements.jsonFileName.textContent = '未选择文件';
-                return;
-            }
-
-            DOMElements.jsonFileName.textContent = file.name;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const jsonContent = JSON.parse(event.target.result);
-                    const rulesText = typeof jsonContent === 'string' ? jsonContent : JSON.stringify(jsonContent, null, 2);
-                    DOMElements.aiRulesTextarea.value = rulesText;
-                    alert('JSON 文件已成功加载！内容已填充到手动输入框，请切换回去查看并确认。');
-                    DOMElements.manualTab.click(); 
-                } catch (error) {
-                    alert('读取JSON文件失败！请确保文件格式正确。');
-                    console.error("JSON parsing error:", error);
-                    DOMElements.jsonFileName.textContent = '文件格式错误';
+        // --- AI Editor Logic ---
+        document.querySelectorAll('.ai-editor-container').forEach(container => {
+            container.addEventListener('click', (e) => {
+                const addBtn = e.target.closest('.add-world-book-btn');
+                const deleteBtn = e.target.closest('.delete-world-book-btn');
+                if (addBtn && !addBtn.disabled) {
+                    const entryId = `wb-entry-${crypto.randomUUID()}`;
+                    container.querySelector('.world-book-entries').insertAdjacentHTML('beforeend', createWorldBookEntryHTML(entryId));
                 }
-            };
-            reader.readAsText(file);
+                if (deleteBtn) {
+                    deleteBtn.closest('.world-book-entry').remove();
+                }
+            });
         });
-        
+
         DOMElements.confirmCreateRoomBtn.addEventListener('click', () => {
             const rating = document.querySelector('input[name="room-rating"]:checked').value;
-            if (rating === 'sfw' && !AppState.geminiApiKey) {
-                alert("创建SFW房间需要设置 Gemini API Key。");
-                return;
-            }
-            if (rating === 'nsfw' && !AppState.dzmmApiKey) {
-                alert("创建NSFW房间需要设置 DZMM API Key。");
-                return;
-            }
+            if (rating === 'sfw' && !AppState.geminiApiKey) return alert("创建SFW房间需要设置 Gemini API Key。");
+            if (rating === 'nsfw' && !AppState.dzmmApiKey) return alert("创建NSFW房间需要设置 DZMM API Key。");
+            AppState.currentAppliedRule = null;
+            resetAiEditor(DOMElements.screens.aiSettingsScreen);
             switchScreen('aiSettingsScreen');
         });
 
         DOMElements.confirmAiSettingsBtn.addEventListener('click', async () => {
             if (!AppState.currentUser) return alert("用户未登录！");
+            
+            let finalSettings;
+            if (AppState.currentAppliedRule) {
+                finalSettings = JSON.parse(JSON.stringify(AppState.currentAppliedRule.settings));
+                finalSettings.openingScene = DOMElements.screens.aiSettingsScreen.querySelector('#opening-scene-textarea').value.trim();
+            } else {
+                finalSettings = getAiSettingsFromEditor(DOMElements.screens.aiSettingsScreen);
+            }
             const roomData = {
-                name: document.getElementById('room-name').value.trim() || '新房间',
+                name: DOMElements.roomName.value.trim() || '新房间',
                 mode: document.querySelector('input[name="chat-mode"]:checked').value,
                 rating: document.querySelector('input[name="room-rating"]:checked').value,
-                isPrivate: document.getElementById('privacy-private').checked,
-                password: document.getElementById('privacy-private').checked ? document.getElementById('room-password').value : null,
-                maxPlayers: parseInt(document.getElementById('player-count').value),
-                aiRules: DOMElements.aiRulesTextarea.value.trim(),
+                isPrivate: DOMElements.privacyPrivateRadio.checked,
+                password: DOMElements.privacyPrivateRadio.checked ? DOMElements.roomPassword.value : null,
+                maxPlayers: parseInt(DOMElements.playerCountSlider.value),
                 hostId: AppState.currentUser.uid, hostName: AppState.username,
-                createdAt: serverTimestamp(), memberCount: 0, hostLeftAt: null
+                createdAt: serverTimestamp(), memberCount: 0,
+                aiAdvancedSettings: finalSettings,
             };
             try {
                 const docRef = await addDoc(collection(db, "rooms"), roomData);
                 await joinRoom(docRef.id);
             } catch (error) { console.error("创建房间失败: ", error); }
         });
+
+        // --- Rule Workshop & Editor Events ---
+        DOMElements.showRuleWorkshopBtn.addEventListener('click', () => {
+            switchScreen('ruleWorkshopScreen');
+            DOMElements.workshopTabBtn.click();
+            if(AppState.unsubscribeWorkshopListener) AppState.unsubscribeWorkshopListener();
+            const q = query(collection(db, "rule_workshop"), orderBy("createdAt", "desc"));
+            AppState.unsubscribeWorkshopListener = onSnapshot(q, (snapshot) => {
+                AppState.workshopRules = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                renderWorkshopRulesList(DOMElements.workshopView, AppState.workshopRules);
+            });
+        });
+        DOMElements.backToMainFromWorkshop.addEventListener('click', () => {
+            if(AppState.unsubscribeWorkshopListener) AppState.unsubscribeWorkshopListener();
+            AppState.unsubscribeWorkshopListener = null;
+            switchScreen('mainMenu');
+        });
+        DOMElements.showRuleEditorBtn.addEventListener('click', () => {
+            resetAiEditor(DOMElements.screens.ruleEditorScreen);
+            switchScreen('ruleEditorScreen');
+        });
+        DOMElements.backToWorkshopFromEditor.addEventListener('click', () => switchScreen('ruleWorkshopScreen'));
+
+        DOMElements.workshopTabBtn.addEventListener('click', (e) => {
+            e.target.classList.replace('tab-btn-inactive', 'tab-btn-active');
+            DOMElements.myRulesTabBtn.classList.replace('tab-btn-active', 'tab-btn-inactive');
+            DOMElements.workshopView.classList.remove('hidden');
+            DOMElements.myRulesView.classList.add('hidden');
+        });
+        DOMElements.myRulesTabBtn.addEventListener('click', (e) => {
+            e.target.classList.replace('tab-btn-inactive', 'tab-btn-active');
+            DOMElements.workshopTabBtn.classList.replace('tab-btn-active', 'tab-btn-inactive');
+            DOMElements.workshopView.classList.add('hidden');
+            DOMElements.myRulesView.classList.remove('hidden');
+            renderMyRulesLists();
+        });
+
+        // --- Save, Upload, Download, Delete Rules Logic ---
+        DOMElements.saveRuleBtn.addEventListener('click', () => {
+            DOMElements.ruleNameInput.value = '';
+            DOMElements.ruleDescInput.value = '';
+            DOMElements.ruleEncryptCheckbox.checked = false;
+            showModal('saveRuleModal');
+        });
+        DOMElements.cancelSaveRuleBtn.addEventListener('click', () => hideModal('saveRuleModal'));
+        DOMElements.confirmSaveRuleBtn.addEventListener('click', () => {
+            const ruleName = DOMElements.ruleNameInput.value.trim();
+            if (!ruleName) return alert('规则名称不能为空！');
+            const newRule = {
+                id: crypto.randomUUID(), name: ruleName,
+                description: DOMElements.ruleDescInput.value.trim(),
+                settings: getAiSettingsFromEditor(DOMElements.screens.ruleEditorScreen),
+                isEncrypted: DOMElements.ruleEncryptCheckbox.checked,
+                authorId: AppState.currentUser.uid, // Mark as own
+            };
+            AppState.myRules.push(newRule);
+            saveMyRules();
+            hideModal('saveRuleModal');
+            switchScreen('ruleWorkshopScreen');
+            DOMElements.myRulesTabBtn.click();
+        });
         
-        DOMElements.modeFreeRadio.addEventListener('change', () => { DOMElements.modeDescription.textContent = 'AI会回应每一位用户的每一句话。'; });
-        DOMElements.modeSummaryRadio.addEventListener('change', () => { DOMElements.modeDescription.textContent = '在所有用户点击"我已说完"后总结上文一次性回复。'; });
+        DOMElements.workshopView.addEventListener('click', (e) => {
+            const downloadBtn = e.target.closest('.download-rule-btn');
+            if(downloadBtn) {
+                const ruleId = downloadBtn.dataset.ruleId;
+                const ruleToDownload = AppState.workshopRules.find(r => r.id === ruleId);
+                if(ruleToDownload) {
+                    if(AppState.downloadedRules.some(r => r.id === ruleId)) return alert('你已经下载过这个规则了！');
+                    AppState.downloadedRules.push(ruleToDownload);
+                    saveDownloadedRules();
+                    alert(`规则 "${ruleToDownload.name}" 下载成功！`);
+                }
+            }
+        });
+        
+        DOMElements.myRulesView.addEventListener('click', async (e) => {
+            const uploadBtn = e.target.closest('.upload-rule-btn');
+            const deleteMyBtn = e.target.closest('.delete-my-rule-btn');
+            const deleteDownloadedBtn = e.target.closest('.delete-downloaded-rule-btn');
+            
+            if(uploadBtn) {
+                if(!confirm('确定要将此规则上传到创意工坊吗？')) return;
+                const ruleId = uploadBtn.dataset.ruleId;
+                const ruleToUpload = AppState.myRules.find(r => r.id === ruleId);
+                if(ruleToUpload) {
+                    uploadBtn.disabled = true;
+                    uploadBtn.innerHTML = '上传中...';
+                    try {
+                        await addDoc(collection(db, "rule_workshop"), {
+                            ...ruleToUpload,
+                            authorName: AppState.username,
+                            createdAt: serverTimestamp(),
+                        });
+                        alert('上传成功！');
+                    } catch (error) {
+                        alert('上传失败: ' + error.message);
+                    } finally {
+                        uploadBtn.disabled = false;
+                        uploadBtn.innerHTML = '<i class="fas fa-upload mr-1"></i>上传';
+                    }
+                }
+            }
+            if(deleteMyBtn) {
+                if(!confirm('确定要删除这条你创建的规则吗？此操作不可逆！')) return;
+                const ruleId = deleteMyBtn.dataset.ruleId;
+                AppState.myRules = AppState.myRules.filter(r => r.id !== ruleId);
+                saveMyRules();
+                renderMyRulesLists();
+            }
+            if(deleteDownloadedBtn) {
+                if(!confirm('确定要删除这条下载的规则吗？')) return;
+                const ruleId = deleteDownloadedBtn.dataset.ruleId;
+                AppState.downloadedRules = AppState.downloadedRules.filter(r => r.id !== ruleId);
+                saveDownloadedRules();
+                renderMyRulesLists();
+            }
+        });
+
+
+        // --- Saved Rules Selection Modal Events ---
+        DOMElements.showSelectRuleModalBtn.addEventListener('click', () => {
+            renderSavedRulesList(DOMElements.modalRulesList, [...AppState.myRules, ...AppState.downloadedRules]);
+            showModal('selectRuleModal');
+        });
+        DOMElements.closeSelectRuleBtn.addEventListener('click', () => hideModal('selectRuleModal'));
+        DOMElements.modalRulesList.addEventListener('click', (e) => {
+            const ruleEl = e.target.closest('.p-3.rounded-lg');
+            if (ruleEl) {
+                const ruleId = ruleEl.dataset.ruleId;
+                const allRules = [...AppState.myRules, ...AppState.downloadedRules];
+                const rule = allRules.find(r => r.id === ruleId);
+                if (rule) {
+                    AppState.currentAppliedRule = rule;
+                    populateAiEditor(DOMElements.screens.aiSettingsScreen, rule.settings, rule.isEncrypted);
+                    hideModal('selectRuleModal');
+                }
+            }
+        });
+        
+        DOMElements.modeFreeRadio.addEventListener('change', () => DOMElements.modeDescription.textContent = 'AI会回应每一位用户的每一句话。');
+        DOMElements.modeSummaryRadio.addEventListener('change', () => DOMElements.modeDescription.textContent = '在所有用户点击"我已说完"后总结上文一次性回复。');
         DOMElements.privacyPrivateRadio.addEventListener('change', () => DOMElements.passwordContainer.classList.remove('hidden'));
         DOMElements.privacyPublicRadio.addEventListener('change', () => DOMElements.passwordContainer.classList.add('hidden'));
         DOMElements.playerCountSlider.addEventListener('input', (e) => DOMElements.playerCountDisplay.textContent = e.target.value);
@@ -1265,9 +1787,7 @@
                     await updateDoc(memberDocRef, { isFinished: true });
                     checkAndTriggerSummary();
                 }
-            } catch (error) {
-                console.error("更新完成状态失败: ", error);
-            }
+            } catch (error) { console.error("更新完成状态失败: ", error); }
         });
 
         DOMElements.chatMessages.addEventListener('contextmenu', e => { e.preventDefault(); const tb = e.target.closest('.chat-bubble'); if (tb) showContextMenu(tb, e); });
@@ -1289,9 +1809,7 @@
             const newGeminiKey = geminiInput.value.trim();
             const newDzmmKey = dzmmInput.value.trim();
             
-            let geminiOk = true;
-            let dzmmOk = true;
-
+            let [geminiOk, dzmmOk] = [true, true];
             if (newGeminiKey && newGeminiKey !== AppState.geminiApiKey) {
                 geminiOk = await verifyGeminiApiKey(newGeminiKey);
                 if (!geminiOk) geminiInput.classList.add('error');
@@ -1304,25 +1822,11 @@
             if (geminiOk && dzmmOk) {
                 localStorage.setItem('chatPartyUsername', newUsername);
                 AppState.username = newUsername || `用户_${AppState.currentUser.uid.slice(-4)}`;
-                
-                if (newGeminiKey) {
-                    localStorage.setItem('chatPartyGeminiKey', newGeminiKey);
-                    AppState.geminiApiKey = newGeminiKey;
-                } else {
-                    localStorage.removeItem('chatPartyGeminiKey');
-                    AppState.geminiApiKey = '';
-                }
-                
-                if (newDzmmKey) {
-                    localStorage.setItem('chatPartyDzmmKey', newDzmmKey);
-                    AppState.dzmmApiKey = newDzmmKey;
-                } else {
-                    localStorage.removeItem('chatPartyDzmmKey');
-                    AppState.dzmmApiKey = '';
-                }
-
+                localStorage.setItem('chatPartyGeminiKey', newGeminiKey);
+                AppState.geminiApiKey = newGeminiKey;
+                localStorage.setItem('chatPartyDzmmKey', newDzmmKey);
+                AppState.dzmmApiKey = newDzmmKey;
                 updateApiReminder();
-
                 DOMElements.apiStatus.textContent = "保存成功！";
                 DOMElements.apiStatus.style.color = 'green';
                 setTimeout(() => {
@@ -1334,7 +1838,6 @@
                 DOMElements.apiStatus.textContent = "API Key 验证失败，请检查后重试。";
                 DOMElements.apiStatus.style.color = 'red';
             }
-            
             btn.disabled = false;
             btn.textContent = '保存设置';
         });
@@ -1350,18 +1853,11 @@
                     const member = doc.data();
                     const memberEl = document.createElement('div');
                     memberEl.className = 'flex items-center justify-between bg-lime-100/80 p-3 rounded-lg';
-                    
                     let statusTags = [];
-                    if (member.uid === AppState.currentRoomInfo.hostId) {
-                        statusTags.push('<span class="text-xs bg-amber-400 text-white px-2 py-0.5 rounded-full">房主</span>');
-                    }
+                    if (member.uid === AppState.currentRoomInfo.hostId) statusTags.push('<span class="text-xs bg-amber-400 text-white px-2 py-0.5 rounded-full">房主</span>');
                     if (AppState.currentRoomInfo.mode === 'summary') {
-                         const summaryStatus = member.isFinished
-                            ? '<span class="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">已说完</span>'
-                            : '<span class="text-xs bg-gray-400 text-white px-2 py-0.5 rounded-full">等待中</span>';
-                        statusTags.push(summaryStatus);
+                        statusTags.push(member.isFinished ? '<span class="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">已说完</span>' : '<span class="text-xs bg-gray-400 text-white px-2 py-0.5 rounded-full">等待中</span>');
                     }
-
                     memberEl.innerHTML = `<span class="font-bold">${member.name}</span><div class="flex items-center gap-1">${statusTags.join('')}</div>`;
                     DOMElements.membersList.appendChild(memberEl);
                 });
@@ -1383,19 +1879,36 @@
             }
         });
 
-        // [NEW] Add listener for page close/refresh to handle disconnects
         window.addEventListener('beforeunload', (e) => {
-            // This is a best-effort attempt to clean up on disconnect.
-            // Modern browsers may not guarantee completion of these async operations.
-            if (AppState.currentRoomId) {
-                leaveRoom();
-            }
+            if (AppState.currentRoomId) leaveRoom();
         });
         
-        // 5. 显示初始屏幕
         switchScreen('mainMenu');
     });
 </script>
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
