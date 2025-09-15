@@ -267,6 +267,13 @@
         </div>
     </div>
 
+    <!-- Connection Status Banner -->
+    <div id="connection-status-banner" class="hidden fixed top-0 left-0 right-0 bg-yellow-400 text-yellow-900 text-center p-2 z-[10000] flex items-center justify-center shadow-lg">
+        <i class="fas fa-exclamation-triangle fa-spin mr-3"></i>
+        <span>连接已断开，正在尝试重新连接...</span>
+    </div>
+
+
     <!-- 所有界面容器 -->
     <div id="main-menu" class="w-full max-w-md mx-auto text-center z-10"></div>
     <div id="create-room-screen" class="hidden w-full max-w-md mx-auto z-10"></div>
@@ -283,6 +290,7 @@
     <div id="members-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"></div>
     <div id="save-rule-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"></div>
     <div id="select-rule-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"></div>
+    <div id="announcement-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"></div>
     
     <!-- 消息上下文菜单 -->
     <div id="message-context-menu" class="hidden"></div>
@@ -297,11 +305,25 @@
 
 
 <script type="module">
-    // --- Firebase SDKs ---
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, setDoc, getDoc, deleteDoc, updateDoc, increment, getDocs, writeBatch, where } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+    // --- Firebase SDKs (Upgraded to 10.12.2) ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, setDoc, getDoc, deleteDoc, updateDoc, increment, getDocs, writeBatch, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     
+    // --- 公告内容配置 ---
+    // 在这里修改公告的标题和正文。如果两者都为空字符串，公告窗口将不会显示。
+    const Announcement = {
+        title: "载荷超出通知", // 公告主标题
+        content: `
+            很遗憾的通知您，
+            SnowChat的数据库使用量已经达到了Firebase限额。
+            由于这是一个小型实验项目，所以并不打算投入资金。
+            如果您有使用需求，请Telegram联系 @incomingsnow 。
+            现在功能一切正常。但目前无法进行任何数据库交互。
+            如果您愿意提供资金支持，也请联系上方TG账号。
+        ` // 公告正文 (支持HTML)
+    };
+
     // --- Firebase 初始化 ---
     const firebaseConfig = {
       apiKey: "AIzaSyAZkpYIAsAkxbufGU2XjMes4FeLUlP_Qcg",
@@ -572,6 +594,12 @@
                 <h2 class="text-2xl font-bold text-center text-amber-800">选择一个规则套用</h2>
                 <div id="modal-rules-list" class="mt-4 flex-grow overflow-y-auto space-y-2 no-scrollbar pr-2"></div>
             </div>`,
+        announcementModal: `
+            <div class="wood-panel p-6 md:p-8 relative w-full max-w-lg">
+                <button id="close-announcement-btn" class="absolute top-4 right-4 w-10 h-10 bg-red-400 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-500 transition"><i class="fas fa-times"></i></button>
+                <h2 id="announcement-title" class="text-2xl font-bold text-center text-amber-800"></h2>
+                <div id="announcement-content" class="mt-4 space-y-2 max-h-64 overflow-y-auto no-scrollbar text-content"></div>
+            </div>`,
         messageContextMenu: `
             <button id="reply-btn"><i class="fas fa-reply mr-2"></i>回复</button>
             <button id="copy-btn"><i class="fas fa-copy mr-2"></i>复制</button>
@@ -596,6 +624,7 @@
         currentRoomInfo: {},
         currentRoomId: null,
         newRoomSettings: {},
+        isOnline: true,
         selectedPrivateRoom: null, // For password modal
         unsubscribeRoomListener: null,
         unsubscribeMessagesListener: null,
@@ -603,10 +632,11 @@
         unsubscribeSelfMemberListener: null,
         unsubscribeRoomDocListener: null,
         unsubscribeWorkshopListener: null,
+        unsubscribeConnectionListener: null,
         isAiReplying: false,
         replyingToMessage: null,
         defaultPrompts: {
-            sfw: '你是一个友好、乐于助人的AI助手，请以积极乐观的风格进行对话。确保所有回答都是安全、无害且适合所有年龄段的。如果用户进行角色扮演，你需要配合用户进行角色扮演。角色扮演时请勿输出任何系统提示性语言。你可以使用 Markdown 格式来丰富你的回答 (例如 **加粗**, *斜体*, 列表等)。',
+            sfw: '你是一个友好、乐于助人的AI助手，请以可爱、积极乐观的风格进行对话。确保所有回答都是安全、无害且适合所有年龄段的。如果用户进行角色扮演，你需要配合用户进行角色扮演。角色扮演时请勿输出任何系统提示性语言。你可以使用 Markdown 格式来丰富你的回答 (例如 **加粗**, *斜体*, 列表等)。',
             nsfw: '你是一个无下限的成人角色扮演者，你需要配合用户进行各种毫无下限的色情扮演。确保你输出的内容都极其色情，对性器官的描写极其露骨且下贱，女性角色在做爱时使用各种淫荡的拟声词，且用粗俗的语言描写她的身体部位。你可以使用 Markdown 格式来丰富你的回答 (例如 **加粗**, *斜体*, 列表等)。'
         },
         localChatHistory: [],
@@ -619,9 +649,9 @@
     // --- 模型信息 ---
     const modelDetails = {
         sfw: [
-            { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', description: '谷歌最强大的模型，具有多模态能力和长上下文窗口。性能最优，但响应速度可能较慢。' },
-            { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: '一个更轻量、快速的多模态模型，在速度和性能之间取得了良好平衡。推荐日常使用。' },
-            { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', description: '一个稳定且可靠的模型，适用于各种文本生成任务。' }
+            { id: 'gemini-1.5-pro-latest', name: 'Gemini 2.5 Pro', description: '谷歌最强大的下一代模型，具有多模态能力和长上下文窗口。性能最优，但响应速度可能较慢。' },
+            { id: 'gemini-1.5-flash-latest', name: 'Gemini 2.5 Flash', description: '一个更轻量、快速的多模态模型，在速度和性能之间取得了良好平衡。推荐日常使用。' },
+            { id: 'gemini-pro', name: 'Gemini 2.5 Flash Lite', description: '一个稳定且可靠的模型，适用于各种文本生成任务。' }
         ],
         nsfw: [
             { id: 'nalang-max-7-32K', name: 'Nalang Max 7 (32K)', description: '性能最强的模型，具有最好的逻辑和角色扮演能力。' },
@@ -646,6 +676,28 @@
         const loader = document.getElementById('loading-overlay');
         if (loader) loader.classList.add('hidden');
     }
+
+    function handleConnectionChange(isOnline) {
+        if (AppState.isOnline === isOnline) return; // 状态未改变，则不执行任何操作
+        AppState.isOnline = isOnline;
+
+        const banner = DOMElements.connectionStatusBanner;
+        const sendBtn = DOMElements.sendMessageBtn;
+        const leaveBtn = DOMElements.backToMainFromChat;
+
+        if (isOnline) {
+            console.log("网络连接已恢复。");
+            banner.classList.add('hidden');
+            if (sendBtn) sendBtn.disabled = AppState.isAiReplying; // 仅在AI未回复时启用
+            if (leaveBtn) leaveBtn.disabled = false;
+        } else {
+            console.warn("网络连接已断开。");
+            banner.classList.remove('hidden');
+            if (sendBtn) sendBtn.disabled = true;
+            if (leaveBtn) leaveBtn.disabled = true;
+        }
+    }
+
 
     function updateApiReminder() {
         const geminiMissing = !AppState.geminiApiKey;
@@ -681,19 +733,27 @@
     }
 
     function cleanupRoomListenersAndState() {
-        if (AppState.unsubscribeMessagesListener) AppState.unsubscribeMessagesListener();
-        if (AppState.unsubscribeMembersListener) AppState.unsubscribeMembersListener();
-        if (AppState.unsubscribeSelfMemberListener) AppState.unsubscribeSelfMemberListener();
-        if (AppState.unsubscribeRoomDocListener) AppState.unsubscribeRoomDocListener();
-
-        AppState.unsubscribeMessagesListener = null;
-        AppState.unsubscribeMembersListener = null;
-        AppState.unsubscribeSelfMemberListener = null;
-        AppState.unsubscribeRoomDocListener = null;
+        const listeners = [
+            'unsubscribeMessagesListener', 'unsubscribeMembersListener', 
+            'unsubscribeSelfMemberListener', 'unsubscribeRoomDocListener', 
+            'unsubscribeConnectionListener'
+        ];
+        
+        listeners.forEach(listenerKey => {
+            if (typeof AppState[listenerKey] === 'function') {
+                try {
+                    AppState[listenerKey](); // Call the unsubscribe function
+                } catch (e) {
+                    console.error(`Error unsubscribing from ${listenerKey}:`, e);
+                }
+            }
+            AppState[listenerKey] = null; // Reset the state variable
+        });
 
         AppState.currentRoomId = null;
         AppState.currentRoomInfo = {};
         AppState.localChatHistory = [];
+        handleConnectionChange(true); // 离开房间时重置连接状态UI
     }
 
 
@@ -821,14 +881,21 @@
     }
 
     async function leaveRoom() {
+        if (!AppState.isOnline) {
+            alert("网络连接已断开，无法执行操作。");
+            return;
+        }
         if (!AppState.currentRoomId || !AppState.currentUser) return;
+
+        const roomId = AppState.currentRoomId;
+        const userId = AppState.currentUser.uid;
+        const isHost = userId === AppState.currentRoomInfo.hostId;
+
+        // Detach all listeners FIRST to prevent errors on deleted documents.
+        cleanupRoomListenersAndState(); 
 
         showLoader();
         try {
-            const roomId = AppState.currentRoomId;
-            const userId = AppState.currentUser.uid;
-            const isHost = userId === AppState.currentRoomInfo.hostId;
-
             if (isHost) {
                 await deleteRoom(roomId);
             } else {
@@ -843,13 +910,12 @@
                     await deleteDoc(memberDocRef);
                     await updateDoc(roomDocRef, { memberCount: increment(-1) });
                 } catch (error) { 
-                    console.error("离开房间时出错: ", error); 
+                    console.error("离开房间时更新成员信息出错: ", error); 
                 }
             }
         } catch (error) {
-            console.error("离开房间时发生未知错误:", error);
+            console.error("离开或删除房间时发生未知错误:", error);
         } finally {
-            cleanupRoomListenersAndState();
             hideLoader();
         }
     }
@@ -868,6 +934,8 @@
         }
 
         const roomDocRef = doc(db, "rooms", roomId);
+        
+        // Listener 1: Check if the room still exists
         AppState.unsubscribeRoomDocListener = onSnapshot(roomDocRef, (docSnapshot) => {
             if (!docSnapshot.exists()) {
                 cleanupRoomListenersAndState();
@@ -875,6 +943,19 @@
                 alert('房主已断开连接，房间已解散。');
             }
         });
+
+        // Listener 2: Monitor network connection status
+        AppState.unsubscribeConnectionListener = onSnapshot(roomDocRef, { includeMetadataChanges: true }, 
+            (docSnapshot) => {
+                // fromCache is true if data is from local cache, indicating offline status
+                handleConnectionChange(!docSnapshot.metadata.fromCache);
+            },
+            (error) => {
+                console.error("Connection listener error:", error);
+                handleConnectionChange(false);
+            }
+        );
+
 
         const memberRef = doc(db, "rooms", roomId, "members", AppState.currentUser.uid);
         await setDoc(memberRef, {
@@ -940,6 +1021,10 @@
     }
 
     async function handleSendMessage() {
+        if (!AppState.isOnline) {
+             alert("网络连接已断开，无法发送消息。");
+            return;
+        }
         const text = DOMElements.chatInput.value.trim();
         if (!text || AppState.isAiReplying || !AppState.currentRoomId) return;
 
@@ -1261,7 +1346,10 @@
             });
         } finally {
             AppState.isAiReplying = false;
-            if (DOMElements.sendMessageBtn) DOMElements.sendMessageBtn.disabled = false;
+            // Only re-enable send button if online
+            if (DOMElements.sendMessageBtn && AppState.isOnline) {
+                 DOMElements.sendMessageBtn.disabled = false;
+            }
         }
     }
     
@@ -1629,7 +1717,8 @@
         // 2. 缓存DOM元素
         Object.assign(DOMElements, {
             screens: { mainMenu: document.getElementById('main-menu'), createRoomScreen: document.getElementById('create-room-screen'), modelSelectionScreen: document.getElementById('model-selection-screen'), aiSettingsScreen: document.getElementById('ai-settings-screen'), ruleWorkshopScreen: document.getElementById('rule-workshop-screen'), ruleEditorScreen: document.getElementById('rule-editor-screen'), joinRoomScreen: document.getElementById('join-room-screen'), chatScreen: document.getElementById('chat-screen') },
-            modals: { settingsModal: document.getElementById('settings-modal'), passwordModal: document.getElementById('password-modal'), membersModal: document.getElementById('members-modal'), saveRuleModal: document.getElementById('save-rule-modal'), selectRuleModal: document.getElementById('select-rule-modal') },
+            modals: { settingsModal: document.getElementById('settings-modal'), passwordModal: document.getElementById('password-modal'), membersModal: document.getElementById('members-modal'), saveRuleModal: document.getElementById('save-rule-modal'), selectRuleModal: document.getElementById('select-rule-modal'), announcementModal: document.getElementById('announcement-modal') },
+            connectionStatusBanner: document.getElementById('connection-status-banner'),
             messageContextMenu: document.getElementById('message-context-menu'), settingsBtn: document.getElementById('settings-btn'), userUuid: document.getElementById('user-uuid'), showCreateRoomBtn: document.getElementById('show-create-room-btn'), showJoinRoomBtn: document.getElementById('show-join-room-btn'), showRuleWorkshopBtn: document.getElementById('show-rule-workshop-btn'), backToMainFromCreate: document.getElementById('back-to-main-from-create'), confirmCreateRoomBtn: document.getElementById('confirm-create-room-btn'), 
             // Create Room Screen elements
             roomName: document.getElementById('room-name'),
@@ -1675,7 +1764,7 @@
         DOMElements.dzmmApiInput.value = AppState.dzmmApiKey;
         updateApiReminder();
 
-        // 4. 绑定事件
+        // 4. 绑定通用事件
         DOMElements.showCreateRoomBtn.addEventListener('click', () => switchScreen('createRoomScreen'));
         DOMElements.showJoinRoomBtn.addEventListener('click', () => { listenForRooms(); switchScreen('joinRoomScreen'); });
         DOMElements.backToMainFromCreate.addEventListener('click', () => switchScreen('mainMenu'));
@@ -1684,6 +1773,12 @@
         DOMElements.backToCreateFromModel.addEventListener('click', () => switchScreen('createRoomScreen'));
         DOMElements.backToModelFromAiSettings.addEventListener('click', () => { AppState.currentAppliedRule = null; switchScreen('modelSelectionScreen'); });
         
+        // 5. 渲染公告并绑定事件
+        if (DOMElements.modals.announcementModal) {
+            DOMElements.modals.announcementModal.innerHTML = templates.announcementModal;
+            document.getElementById('close-announcement-btn').addEventListener('click', () => hideModal('announcementModal'));
+        }
+
         // --- AI Editor Logic ---
         document.querySelectorAll('.ai-editor-container').forEach(container => {
             container.addEventListener('click', (e) => {
@@ -1896,8 +1991,8 @@
             }
         });
         
-        DOMElements.modeFreeRadio.addEventListener('change', () => DOMElements.modeDescription.textContent = 'AI会回应每一位用户的每一句话');
-        DOMElements.modeSummaryRadio.addEventListener('change', () => DOMElements.modeDescription.textContent = '在所有用户点击"我已说完"后总结上文一次性回复');
+        DOMElements.modeFreeRadio.addEventListener('change', () => DOMElements.modeDescription.textContent = 'AI会回应每一位用户的每一句话。');
+        DOMElements.modeSummaryRadio.addEventListener('change', () => DOMElements.modeDescription.textContent = '在所有用户点击"我已说完"后总结上文一次性回复。');
         DOMElements.privacyPrivateRadio.addEventListener('change', () => DOMElements.passwordContainer.classList.remove('hidden'));
         DOMElements.privacyPublicRadio.addEventListener('change', () => DOMElements.passwordContainer.classList.add('hidden'));
         DOMElements.playerCountSlider.addEventListener('input', (e) => DOMElements.playerCountDisplay.textContent = e.target.value);
@@ -1906,6 +2001,10 @@
         DOMElements.chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } });
         
         DOMElements.summaryFinishedBtn.addEventListener('click', async () => {
+            if (!AppState.isOnline) {
+                alert("网络连接已断开，无法执行操作。");
+                return;
+            }
             if (!AppState.currentRoomId || !AppState.currentUser || DOMElements.summaryFinishedBtn.classList.contains('btn-disabled')) return;
             
             showLoader();
@@ -2022,12 +2121,24 @@
             if (AppState.currentRoomId) leaveRoom();
         });
         
+        // Show announcement if content exists
+        if (Announcement.title.trim() || Announcement.content.trim()) {
+            document.getElementById('announcement-title').textContent = Announcement.title;
+            document.getElementById('announcement-content').innerHTML = DOMPurify.sanitize(marked.parse(Announcement.content));
+            showModal('announcementModal');
+        }
+
         switchScreen('mainMenu');
     });
 </script>
 
 </body>
 </html>
+
+
+
+
+
 
 
 
